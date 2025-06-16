@@ -6,17 +6,19 @@
   <title>SciBowl QBReader</title>
   <style>
     body { font-family: Arial, sans-serif; max-width: 700px; margin: auto; padding: 20px; }
-    .line { margin: 10px 0; }
     button { margin-top: 10px; }
-    #answer, #bonus, #bonusAnswer, #buzzerTimer, #bonusTimer { display: none; margin-top: 15px; font-weight: bold; }
+    #answer, #bonus, #bonusAnswer, #buzzerTimer, #bonusTimer, #loading { display: none; margin-top: 15px; font-weight: bold; }
     #speedLabel { margin-left: 10px; font-weight: bold; }
-    #questionArea { min-height: 100px; }
+    #questionArea { min-height: 100px; margin-top: 10px; }
+    #readerLine { margin-top: 10px; font-size: 1.1em; }
+    .loading { color: gray; font-style: italic; }
   </style>
 </head>
 <body>
   <h1>🔬 SciBowl QBReader</h1>
 
   <h3>Choose categories:</h3>
+  <label><input type="checkbox" id="selectAllCats" /> Select All</label><br>
   <div id="categoryList">
     <label><input type="checkbox" value="PHYSICS" /> Physics</label><br>
     <label><input type="checkbox" value="CHEMISTRY" /> Chemistry</label><br>
@@ -39,14 +41,15 @@
   <label><input type="radio" name="bonusMode" value="auto" checked> Always</label>
   <label><input type="radio" name="bonusMode" value="tossup"> Only if Tossup Correct</label>
 
-  <h3>Reading speed:</h3>
-  <input type="range" id="speedSlider" min="0.1" max="1" step="0.1" value="0.5" />
+  <h3>Reading speed: <small style="font-weight: normal; color: gray">(Recommended: 0.2–0.3s)</small></h3>
+  <input type="range" id="speedSlider" min="0.1" max="1" step="0.1" value="0.5" style="direction: rtl;"/>
   <span id="speedLabel">0.5s per word</span>
 
   <br><br>
   <button onclick="loadQuestion()">Load Question</button>
   <button id="pauseBtn" onclick="togglePause()" style="display:none">Pause</button>
 
+  <div id="loading" class="loading">Loading question...</div>
   <div id="questionArea"></div>
   <div id="buzzerTimer"></div>
   <button id="buzzBtn" style="display:none" onclick="buzzed()">Buzz!</button>
@@ -61,12 +64,16 @@
   <script>
     let currentWords = [], wordIndex = 0, readingInterval = null, paused = false;
     let questionData = null, bonusAllowed = true;
-
     const slider = document.getElementById("speedSlider");
     const speedLabel = document.getElementById("speedLabel");
 
     slider.addEventListener("input", () => {
       speedLabel.textContent = slider.value + "s per word";
+    });
+
+    document.getElementById("selectAllCats").addEventListener("change", function() {
+      const checkboxes = document.querySelectorAll("#categoryList input[type='checkbox']");
+      checkboxes.forEach(cb => cb.checked = this.checked);
     });
 
     function getCheckedValues(containerId) {
@@ -85,6 +92,9 @@
         if (difficulties.length) payload.difficulties = difficulties;
       }
 
+      document.getElementById("loading").style.display = "block";
+      document.getElementById("questionArea").innerHTML = "";
+
       try {
         const res = await fetch("https://sci-bowl-proxy.onrender.com/api/random", {
           method: payload ? "POST" : "GET",
@@ -93,6 +103,8 @@
         });
 
         const data = await res.json();
+        document.getElementById("loading").style.display = "none";
+
         if (!data.questions || data.questions.length === 0) {
           document.getElementById("questionArea").innerHTML = `<p style="color:red;">❌ No questions found. Try different filters.</p>`;
           return;
@@ -117,6 +129,7 @@
 
         startWordReading();
       } catch (err) {
+        document.getElementById("loading").style.display = "none";
         document.getElementById("questionArea").innerHTML = `<p style="color:red;">⚠️ Failed to load question. Try again later.</p>`;
         console.error(err);
       }
@@ -124,8 +137,6 @@
 
     function startWordReading() {
       if (readingInterval) clearInterval(readingInterval);
-
-      const delay = parseFloat(slider.value) * 1000;
       const lineDiv = document.getElementById("readerLine");
       lineDiv.textContent = "";
 
@@ -137,7 +148,12 @@
           clearInterval(readingInterval);
           startBuzzerTimer();
         }
-      }, delay);
+      }, parseFloat(slider.value) * 1000);
+
+      slider.addEventListener("input", () => {
+        clearInterval(readingInterval);
+        startWordReading();
+      });
     }
 
     function togglePause() {
@@ -171,11 +187,8 @@
       document.getElementById("answer").style.display = "block";
       document.getElementById("buzzBtn").style.display = "none";
       document.getElementById("buzzerTimer").style.display = "none";
-
       const mode = document.querySelector('input[name="bonusMode"]:checked').value;
-      if (mode === "auto" || bonusAllowed) {
-        document.getElementById("showBonusBtn").style.display = "inline";
-      }
+      if (mode === "auto" || bonusAllowed) document.getElementById("showBonusBtn").style.display = "inline";
     }
 
     function showBonus() {
