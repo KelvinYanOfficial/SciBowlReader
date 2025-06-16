@@ -147,7 +147,7 @@
       document.getElementById("questionArea").style.display = "block";
       document.getElementById("answer").style.display = "none";
       document.getElementById("buzzerTimer").style.display = "none";
-      document.getElementById("buzzBtn").style.display = "none";
+      document.getElementById("buzzBtn").style.display = "inline";
       document.getElementById("answerInputDiv").style.display = "none";
       document.getElementById("showBonusBtn").style.display = "none";
       document.getElementById("bonus").style.display = "none";
@@ -207,23 +207,17 @@
       document.getElementById("buzzBtn").style.display = "none";
       document.getElementById("buzzerTimer").style.display = "none";
       document.getElementById("answerInputDiv").style.display = "block";
-    }
 
-    function startBuzzerTimer() {
-      let time = 5;
+      let extra = 5;
       const timerDiv = document.getElementById("buzzerTimer");
       timerDiv.style.display = "block";
-      document.getElementById("buzzBtn").style.display = "inline";
-      timerDiv.textContent = `⏱ Buzz Timer: ${time}`;
+      timerDiv.textContent = `⏱ Answer Timer: ${extra}`;
       buzzTimerInterval = setInterval(() => {
-        time--;
-        timerDiv.textContent = `⏱ Buzz Timer: ${time}`;
-        if (time <= 0) {
+        extra--;
+        timerDiv.textContent = `⏱ Answer Timer: ${extra}`;
+        if (extra <= 0) {
           clearInterval(buzzTimerInterval);
           timerDiv.style.display = "none";
-          document.getElementById("buzzBtn").style.display = "none";
-          document.getElementById("answer").style.display = "block";
-          document.getElementById("answer").innerHTML = `<span style='color:red'>❌ Time's up! No buzz.</span><br><strong>Answer:</strong> ${questionData.tossup_answer}`;
         }
       }, 1000);
     }
@@ -259,3 +253,4 @@
   </script>
 </body>
 </html>
+
