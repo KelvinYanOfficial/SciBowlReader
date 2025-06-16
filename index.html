@@ -30,7 +30,6 @@
   <button onclick="loadQuestion()">Load Question</button>
 
   <div id="questionArea"></div>
-  <button id="nextLineBtn" style="display:none" onclick="showNextLine()">Next Line</button>
   <button id="showAnswerBtn" style="display:none" onclick="showAnswer()">Show Tossup Answer</button>
   <div id="answer"></div>
   <button id="showBonusBtn" style="display:none" onclick="showBonus()">Show Bonus</button>
@@ -42,6 +41,7 @@
     let currentLines = [];
     let lineIndex = 0;
     let questionData = null;
+    let readingInterval = null;
 
     async function loadQuestion() {
       const category = document.getElementById("category").value.trim();
@@ -68,26 +68,33 @@
         document.getElementById("answer").style.display = "none";
         document.getElementById("bonus").style.display = "none";
         document.getElementById("bonusAnswer").style.display = "none";
-        document.getElementById("nextLineBtn").style.display = "inline";
         document.getElementById("showAnswerBtn").style.display = "none";
         document.getElementById("showBonusBtn").style.display = "none";
         document.getElementById("showBonusAnswerBtn").style.display = "none";
+
+        startAutoReading();
       } catch (err) {
         document.getElementById("questionArea").innerHTML = `<p style="color:red;">⚠️ Failed to load question. Try again later.</p>`;
         console.error(err);
       }
     }
 
-    function showNextLine() {
-      if (lineIndex < currentLines.length) {
-        const line = document.createElement("div");
-        line.className = "line";
-        line.textContent = currentLines[lineIndex++];
-        document.getElementById("questionArea").appendChild(line);
-        if (lineIndex === currentLines.length) {
+    function startAutoReading() {
+      if (readingInterval) clearInterval(readingInterval);
+
+      readingInterval = setInterval(() => {
+        if (lineIndex < currentLines.length) {
+          const line = document.createElement("div");
+          line.className = "line";
+          line.textContent = currentLines[lineIndex++];
+          document.getElementById("questionArea").appendChild(line);
+        }
+
+        if (lineIndex >= currentLines.length) {
+          clearInterval(readingInterval);
           document.getElementById("showAnswerBtn").style.display = "inline";
         }
-      }
+      }, 2000); // ⏱ Adjust delay here (in milliseconds)
     }
 
     function showAnswer() {
@@ -109,3 +116,4 @@
   </script>
 </body>
 </html>
+
