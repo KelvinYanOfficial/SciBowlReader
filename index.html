@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SciBowl QBReader</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 700px; margin: auto; padding: 20px; }
+    .line { margin: 10px 0; }
+    button { margin-top: 10px; }
+    #answer, #bonus, #bonusAnswer { display: none; margin-top: 15px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>🔬 SciBowl QBReader</h1>
+
+  <label for="category">Choose a category:</label>
+  <select id="category">
+    <option value="">Any</option>
+    <option value="PHYSICS">PHYSICS</option>
+    <option value="CHEMISTRY">CHEMISTRY</option>
+    <option value="BIOLOGY">BIOLOGY</option>
+    <option value="EARTH AND SPACE">EARTH AND SPACE</option>
+    <option value="ENERGY">ENERGY</option>
+    <option value="MATH">MATH</option>
+    <option value="GENERAL SCIENCE">GENERAL SCIENCE</option>
+    <option value="ASTRONOMY">ASTRONOMY</option>
+    <option value="COMPUTER SCIENCE">COMPUTER SCIENCE</option>
+  </select>
+  <button onclick="loadQuestion()">Load Question</button>
+
+  <div id="questionArea"></div>
+  <button id="nextLineBtn" style="display:none" onclick="showNextLine()">Next Line</button>
+  <button id="showAnswerBtn" style="display:none" onclick="showAnswer()">Show Tossup Answer</button>
+  <div id="answer"></div>
+  <button id="showBonusBtn" style="display:none" onclick="showBonus()">Show Bonus</button>
+  <div id="bonus"></div>
+  <button id="showBonusAnswerBtn" style="display:none" onclick="showBonusAnswer()">Show Bonus Answer</button>
+  <div id="bonusAnswer"></div>
+
+  <script>
+    let currentLines = [];
+    let lineIndex = 0;
+    let questionData = null;
+
+    async function loadQuestion() {
+      const category = document.getElementById("category").value.trim();
+      const payload = category ? { categories: [category.toUpperCase()] } : null;
+
+      try {
+        const res = await fetch("https://sci-bowl-proxy.onrender.com/api/random", {
+          method: payload ? "POST" : "GET",
+          headers: { "Content-Type": "application/json" },
+          body: payload ? JSON.stringify(payload) : null
+        });
+
+        const data = await res.json();
+        if (!data.questions || data.questions.length === 0) {
+          document.getElementById("questionArea").innerHTML = `<p style="color:red;">❌ No questions found. Try a different category or leave it blank.</p>`;
+          return;
+        }
+
+        questionData = data.questions[0];
+        currentLines = questionData.tossup_question.split(/(?<=[.?!])\s+/);
+        lineIndex = 0;
+
+        document.getElementById("questionArea").innerHTML = `<h3>${questionData.category}</h3>`;
+        document.getElementById("answer").style.display = "none";
+        document.getElementById("bonus").style.display = "none";
+        document.getElementById("bonusAnswer").style.display = "none";
+        document.getElementById("nextLineBtn").style.display = "inline";
+        document.getElementById("showAnswerBtn").style.display = "none";
+        document.getElementById("showBonusBtn").style.display = "none";
+        document.getElementById("showBonusAnswerBtn").style.display = "none";
+      } catch (err) {
+        document.getElementById("questionArea").innerHTML = `<p style="color:red;">⚠️ Failed to load question. Try again later.</p>`;
+        console.error(err);
+      }
+    }
+
+    function showNextLine() {
+      if (lineIndex < currentLines.length) {
+        const line = document.createElement("div");
+        line.className = "line";
+        line.textContent = currentLines[lineIndex++];
+        document.getElementById("questionArea").appendChild(line);
+        if (lineIndex === currentLines.length) {
+          document.getElementById("showAnswerBtn").style.display = "inline";
+        }
+      }
+    }
+
+    function showAnswer() {
+      document.getElementById("answer").textContent = "Answer: " + questionData.tossup_answer;
+      document.getElementById("answer").style.display = "block";
+      document.getElementById("showBonusBtn").style.display = "inline";
+    }
+
+    function showBonus() {
+      document.getElementById("bonus").textContent = "Bonus: " + questionData.bonus_question;
+      document.getElementById("bonus").style.display = "block";
+      document.getElementById("showBonusAnswerBtn").style.display = "inline";
+    }
+
+    function showBonusAnswer() {
+      document.getElementById("bonusAnswer").textContent = "Bonus Answer: " + questionData.bonus_answer;
+      document.getElementById("bonusAnswer").style.display = "block";
+    }
+  </script>
+</body>
+</html>
