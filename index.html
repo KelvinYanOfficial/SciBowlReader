@@ -36,8 +36,8 @@
   </div>
 
   <h3>Reading speed:</h3>
-  <input type="range" id="speedSlider" min="1" max="5" value="2" />
-  <span id="speedLabel">2s per word</span>
+  <input type="range" id="speedSlider" min="0.1" max="2" step="0.1" value="0.5" />
+  <span id="speedLabel">0.5s per word</span>
 
   <br><br>
   <button onclick="loadQuestion()">Load Question</button>
@@ -113,7 +113,7 @@
     function startWordReading() {
       if (readingInterval) clearInterval(readingInterval);
 
-      const delay = Number(slider.value) * 1000;
+      const delay = parseFloat(slider.value) * 1000;
       const lineDiv = document.getElementById("readerLine");
       lineDiv.textContent = "";
 
