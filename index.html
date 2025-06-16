@@ -108,7 +108,7 @@
 
   <script>
     let currentWords = [], wordIndex = 0, readingInterval = null, paused = false;
-    let questionData = null, buzzTimerInterval = null, timeLeft = 5;
+    let questionData = null, buzzTimerInterval = null, timeLeft = 5, buzzerStarted = false;
     const slider = document.getElementById("speedSlider");
     const speedLabel = document.getElementById("speedLabel");
 
@@ -127,7 +127,7 @@
       speedLabel.textContent = `Speed: ${slider.value}`;
       if (readingInterval) {
         clearInterval(readingInterval);
-        startWordReading(true); // preserve text
+        startWordReading(true); // do not reset
       }
     });
 
@@ -139,6 +139,7 @@
       clearInterval(readingInterval);
       clearInterval(buzzTimerInterval);
       wordIndex = 0;
+      buzzerStarted = false;
       document.getElementById("readerLine").textContent = "";
       document.getElementById("answer").style.display = "none";
       document.getElementById("bonus").style.display = "none";
@@ -152,7 +153,6 @@
 
       const categories = getCheckedValues("categoryList");
       const difficulties = getCheckedValues("difficultyList");
-
       let payload = {};
       if (categories.length) payload.categories = categories;
       if (difficulties.length) payload.difficulties = difficulties;
@@ -184,9 +184,10 @@
         if (!paused && wordIndex < currentWords.length) {
           document.getElementById("readerLine").textContent += currentWords[wordIndex++] + " ";
         }
-        if (wordIndex >= currentWords.length) {
+        if (wordIndex >= currentWords.length && !buzzerStarted) {
           clearInterval(readingInterval);
           startBuzzerTimer();
+          buzzerStarted = true;
         }
       }, 1100 - (slider.value * 100));
     }
@@ -258,5 +259,6 @@
   </script>
 </body>
 </html>
+
 
 
