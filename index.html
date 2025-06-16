@@ -14,7 +14,7 @@
     button {
       margin-top: 10px;
     }
-    #answer, #bonus, #bonusAnswer, #buzzerTimer, #bonusTimer, #loading, #answerInputDiv, #bonusInputDiv {
+    #answer, #bonus, #bonusAnswer, #buzzerTimer, #bonusTimer, #loading, #answerInputDiv {
       display: none;
       margin-top: 15px;
       font-weight: bold;
@@ -23,7 +23,7 @@
       min-height: 100px;
       margin-top: 10px;
     }
-    #readerLine, #bonusLine {
+    #readerLine {
       margin-top: 10px;
       font-size: 1.1em;
       white-space: pre-wrap;
@@ -108,8 +108,8 @@
 
   <script>
     let currentWords = [], wordIndex = 0, readingInterval = null, paused = false;
-    let questionData = null, bonusAllowed = false, buzzedIn = false;
-    let buzzTimerInterval = null, speedSlider = null;
+    let questionData = null, buzzedIn = false, readingStopped = false;
+    let buzzTimerInterval = null;
 
     document.addEventListener("keydown", e => {
       if (e.code === "Space" && document.getElementById("buzzBtn").style.display !== "none") {
@@ -119,85 +119,79 @@
     });
 
     document.getElementById("selectAllCats").addEventListener("change", function () {
-      const checkboxes = document.querySelectorAll("#categoryList input[type='checkbox']");
-      checkboxes.forEach(cb => cb.checked = this.checked);
+      document.querySelectorAll("#categoryList input[type='checkbox']")
+        .forEach(cb => cb.checked = this.checked);
     });
 
-    function getCheckedValues(containerId) {
-      return Array.from(document.querySelectorAll(`#${containerId} input:checked`)).map(cb => cb.value);
-    }
-
     document.getElementById("speedSlider").addEventListener("input", () => {
-      document.getElementById("speedLabel").textContent = `Speed: ${document.getElementById("speedSlider").value}`;
-      if (readingInterval) {
+      document.getElementById("speedLabel").textContent = `Speed: ${speedSlider.value}`;
+      if (readingInterval && !readingStopped) {
         clearInterval(readingInterval);
         startWordReading();
       }
     });
 
+    function getCheckedValues(containerId) {
+      return Array.from(document.querySelectorAll(`#${containerId} input:checked`))
+        .map(cb => cb.value);
+    }
+
     async function loadQuestion() {
-      clearInterval(readingInterval);
-      clearInterval(buzzTimerInterval);
+      const categories = getCheckedValues("categoryList");
+      const difficulties = getCheckedValues("difficultyList");
+      buzzedIn = false;
+      readingStopped = false;
+      wordIndex = 0;
       document.getElementById("readerLine").textContent = "";
-      document.getElementById("buzzerTimer").style.display = "none";
+      document.getElementById("loading").style.display = "block";
+      document.getElementById("questionArea").style.display = "block";
       document.getElementById("answer").style.display = "none";
-      document.getElementById("bonus").style.display = "none";
-      document.getElementById("bonusAnswer").style.display = "none";
+      document.getElementById("buzzerTimer").style.display = "none";
       document.getElementById("buzzBtn").style.display = "none";
       document.getElementById("answerInputDiv").style.display = "none";
       document.getElementById("showBonusBtn").style.display = "none";
+      document.getElementById("bonus").style.display = "none";
+      document.getElementById("bonusAnswer").style.display = "none";
+      document.getElementById("bonusTimer").style.display = "none";
       document.getElementById("showBonusAnswerBtn").style.display = "none";
-      document.getElementById("pauseBtn").style.display = "inline";
-      buzzedIn = false;
-      bonusAllowed = false;
-
-      const categories = getCheckedValues("categoryList");
-      const difficulties = getCheckedValues("difficultyList");
 
       let payload = {};
       if (categories.length) payload.categories = categories;
       if (difficulties.length) payload.difficulties = difficulties;
 
-      document.getElementById("loading").style.display = "block";
+      const res = await fetch("https://sci-bowl-proxy.onrender.com/api/random", {
+        method: Object.keys(payload).length ? "POST" : "GET",
+        headers: { "Content-Type": "application/json" },
+        body: Object.keys(payload).length ? JSON.stringify(payload) : null
+      });
 
-      try {
-        const res = await fetch("https://sci-bowl-proxy.onrender.com/api/random", {
-          method: Object.keys(payload).length ? "POST" : "GET",
-          headers: { "Content-Type": "application/json" },
-          body: Object.keys(payload).length ? JSON.stringify(payload) : null
-        });
-        const data = await res.json();
-        document.getElementById("loading").style.display = "none";
+      const data = await res.json();
+      document.getElementById("loading").style.display = "none";
 
-        if (!data.questions || data.questions.length === 0) {
-          document.getElementById("readerLine").innerHTML = `<p style='color:red;'>❌ No questions found.</p>`;
-          return;
-        }
-
-        questionData = data.questions[0];
-        currentWords = questionData.tossup_question.split(/\s+/);
-        wordIndex = 0;
-        startWordReading();
-
-      } catch (err) {
-        document.getElementById("loading").style.display = "none";
-        document.getElementById("readerLine").innerHTML = `<p style='color:red;'>⚠️ Failed to load question.</p>`;
-        console.error(err);
+      if (!data.questions || data.questions.length === 0) {
+        document.getElementById("questionArea").innerHTML = "<p style='color:red;'>❌ No questions found.</p>";
+        return;
       }
+
+      questionData = data.questions[0];
+      currentWords = questionData.tossup_question.split(/\s+/);
+      startWordReading();
     }
 
     function startWordReading() {
-      const lineDiv = document.getElementById("readerLine");
+      const speed = 1100 - (parseInt(speedSlider.value) * 100);
+      const line = document.getElementById("readerLine");
       if (readingInterval) clearInterval(readingInterval);
+
       readingInterval = setInterval(() => {
-        if (!paused && wordIndex < currentWords.length) {
-          lineDiv.textContent += currentWords[wordIndex++] + " ";
+        if (!paused && wordIndex < currentWords.length && !readingStopped) {
+          line.textContent += currentWords[wordIndex++] + " ";
         }
         if (wordIndex >= currentWords.length) {
           clearInterval(readingInterval);
           if (!buzzedIn) startBuzzerTimer();
         }
-      }, 1100 - (parseInt(document.getElementById("speedSlider").value) * 100));
+      }, speed);
     }
 
     function togglePause() {
@@ -205,17 +199,26 @@
       document.getElementById("pauseBtn").textContent = paused ? "Resume" : "Pause";
     }
 
+    function buzzed() {
+      buzzedIn = true;
+      readingStopped = true;
+      clearInterval(readingInterval);
+      clearInterval(buzzTimerInterval);
+
+      document.getElementById("buzzBtn").style.display = "none";
+      document.getElementById("answerInputDiv").style.display = "block";
+    }
+
     function startBuzzerTimer() {
       let time = 5;
       const timerDiv = document.getElementById("buzzerTimer");
       timerDiv.style.display = "block";
-      timerDiv.textContent = `⏱ Buzz Timer: ${time}`;
       document.getElementById("buzzBtn").style.display = "inline";
-
+      timerDiv.textContent = `⏱ Buzz Timer: ${time}`;
       buzzTimerInterval = setInterval(() => {
         time--;
         timerDiv.textContent = `⏱ Buzz Timer: ${time}`;
-        if (time <= 0 && !buzzedIn) {
+        if (time <= 0) {
           clearInterval(buzzTimerInterval);
           timerDiv.style.display = "none";
           document.getElementById("buzzBtn").style.display = "none";
@@ -225,56 +228,17 @@
       }, 1000);
     }
 
-    function buzzed() {
-      buzzedIn = true;
-      clearInterval(buzzTimerInterval);
-      document.getElementById("answerInputDiv").style.display = "block";
-      document.getElementById("buzzBtn").style.display = "none";
-      document.getElementById("buzzerTimer").textContent = "⏱ Bonus Time: 5";
-      let bonusTime = 5;
-      buzzTimerInterval = setInterval(() => {
-        bonusTime--;
-        document.getElementById("buzzerTimer").textContent = `⏱ Bonus Time: ${bonusTime}`;
-        if (bonusTime <= 0) {
-          clearInterval(buzzTimerInterval);
-          document.getElementById("buzzerTimer").style.display = "none";
-        }
-      }, 1000);
-    }
-
     function submitAnswer() {
-      const userAnswer = document.getElementById("userAnswer").value.trim().toLowerCase();
-      const correctAnswer = questionData.tossup_answer.trim().toLowerCase();
-      const result = userAnswer && correctAnswer.includes(userAnswer) ? "✅ Correct!" : "❌ Incorrect.";
-      document.getElementById("answer").innerHTML = `${result}<br><strong>Correct Answer:</strong> ${questionData.tossup_answer}`;
+      const input = document.getElementById("userAnswer").value.trim().toLowerCase();
+      const correct = questionData.tossup_answer.trim().toLowerCase();
+      const isCorrect = input && correct.includes(input);
+      document.getElementById("answer").innerHTML = `${isCorrect ? '✅ Correct!' : '❌ Incorrect.'}<br><strong>Answer:</strong> ${questionData.tossup_answer}`;
       document.getElementById("answer").style.display = "block";
 
-      const mode = document.querySelector('input[name="bonusMode"]:checked').value;
-      if (mode === "auto" || (mode === "tossup" && result.includes("Correct"))) {
-        document.getElementById("showBonusBtn").style.display = "inline";
-      }
-    }
-
-    function showBonus() {
-      if (document.querySelector('input[name=\"bonusMode\"]:checked').value === \"none\") return;
-      document.getElementById("bonus").textContent = "Bonus: " + questionData.bonus_question;
-      document.getElementById("bonus").style.display = "block";
-      document.getElementById("bonusTimer").style.display = "block";
-      document.getElementById("showBonusAnswerBtn").style.display = "inline";
-      let time = 20;
-      const timerDiv = document.getElementById("bonusTimer");
-      timerDiv.textContent = `⏳ Bonus Timer: ${time}`;
-      const interval = setInterval(() => {
-        time--;
-        timerDiv.textContent = `⏳ Bonus Timer: ${time}`;
-        if (time <= 0) clearInterval(interval);
-      }, 1000);
-    }
-
-    function showBonusAnswer() {
-      document.getElementById("bonusAnswer").textContent = "Bonus Answer: " + questionData.bonus_answer;
-      document.getElementById("bonusAnswer").style.display = "block";
-    }
-  </script>
-</body>
-</html>
+      if (!isCorrect) {
+        readingStopped = false;
+        startWordReading();
+      } else {
+        const bonusPref = document.querySelector('input[name=\"bonusMode\"]:checked').value;
+        if (bonusPref === \"auto\" || bonusPref === \"tossup\") {
+          document.getElementById(\"showBonusBtn\").style.display = \"inline\";\n        }\n      }\n    }\n\n    function showBonus() {\n      document.getElementById(\"bonus\").textContent = questionData.bonus_question;\n      document.getElementById(\"bonus\").style.display = \"block\";\n      document.getElementById(\"showBonusAnswerBtn\").style.display = \"inline\";\n    }\n\n    function showBonusAnswer() {\n      document.getElementById(\"bonusAnswer\").textContent = \"Bonus Answer: \" + questionData.bonus_answer;\n      document.getElementById(\"bonusAnswer\").style.display = \"block\";\n    }\n  </script>\n</body>\n</html>\n```\n\nLet me know the next tweak!
