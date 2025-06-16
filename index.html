@@ -10,6 +10,7 @@
     button { margin-top: 10px; }
     #answer, #bonus, #bonusAnswer { display: none; margin-top: 15px; font-weight: bold; }
     #speedLabel { margin-left: 10px; font-weight: bold; }
+    #questionArea { min-height: 100px; }
   </style>
 </head>
 <body>
@@ -36,7 +37,7 @@
 
   <h3>Reading speed:</h3>
   <input type="range" id="speedSlider" min="1" max="5" value="2" />
-  <span id="speedLabel">2s per line</span>
+  <span id="speedLabel">2s per word</span>
 
   <br><br>
   <button onclick="loadQuestion()">Load Question</button>
@@ -50,8 +51,8 @@
   <div id="bonusAnswer"></div>
 
   <script>
-    let currentLines = [];
-    let lineIndex = 0;
+    let currentWords = [];
+    let wordIndex = 0;
     let questionData = null;
     let readingInterval = null;
 
@@ -59,7 +60,7 @@
     const speedLabel = document.getElementById("speedLabel");
 
     slider.addEventListener("input", () => {
-      speedLabel.textContent = slider.value + "s per line";
+      speedLabel.textContent = slider.value + "s per word";
     });
 
     function getCheckedValues(containerId) {
@@ -91,10 +92,10 @@
         }
 
         questionData = data.questions[0];
-        currentLines = questionData.tossup_question.split(/(?<=[.?!])\s+/);
-        lineIndex = 0;
+        currentWords = questionData.tossup_question.split(/\s+/);
+        wordIndex = 0;
 
-        document.getElementById("questionArea").innerHTML = `<h3>${questionData.category}</h3>`;
+        document.getElementById("questionArea").innerHTML = `<h3>${questionData.category}</h3><div id="readerLine"></div>`;
         document.getElementById("answer").style.display = "none";
         document.getElementById("bonus").style.display = "none";
         document.getElementById("bonusAnswer").style.display = "none";
@@ -102,27 +103,26 @@
         document.getElementById("showBonusBtn").style.display = "none";
         document.getElementById("showBonusAnswerBtn").style.display = "none";
 
-        startAutoReading();
+        startWordReading();
       } catch (err) {
         document.getElementById("questionArea").innerHTML = `<p style="color:red;">⚠️ Failed to load question. Try again later.</p>`;
         console.error(err);
       }
     }
 
-    function startAutoReading() {
+    function startWordReading() {
       if (readingInterval) clearInterval(readingInterval);
 
       const delay = Number(slider.value) * 1000;
+      const lineDiv = document.getElementById("readerLine");
+      lineDiv.textContent = "";
 
       readingInterval = setInterval(() => {
-        if (lineIndex < currentLines.length) {
-          const line = document.createElement("div");
-          line.className = "line";
-          line.textContent = currentLines[lineIndex++];
-          document.getElementById("questionArea").appendChild(line);
+        if (wordIndex < currentWords.length) {
+          lineDiv.textContent += currentWords[wordIndex++] + " ";
         }
 
-        if (lineIndex >= currentLines.length) {
+        if (wordIndex >= currentWords.length) {
           clearInterval(readingInterval);
           document.getElementById("showAnswerBtn").style.display = "inline";
         }
@@ -148,4 +148,3 @@
   </script>
 </body>
 </html>
-
