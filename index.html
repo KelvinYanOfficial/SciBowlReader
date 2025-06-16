@@ -97,7 +97,7 @@
   <button id="buzzBtn" style="display:none" onclick="buzzed()">Buzz!</button>
   <div id="answerInputDiv">
     <input type="text" id="userAnswer" placeholder="Your answer..." />
-    <button onclick="submitAnswer()">Submit Answer</button>
+    <button id="submitAnswerBtn">Submit Answer</button>
   </div>
   <div id="answer"></div>
   <button id="showBonusBtn" style="display:none" onclick="showBonus()">Show Bonus</button>
@@ -121,6 +121,8 @@
         buzzed();
       }
     });
+
+    document.getElementById("submitAnswerBtn").addEventListener("click", submitAnswer);
 
     document.getElementById("selectAllCats").addEventListener("change", function() {
       document.querySelectorAll("#categoryList input[type='checkbox']").forEach(cb => cb.checked = this.checked);
@@ -146,7 +148,6 @@
       clearInterval(buzzTimerInterval);
       clearInterval(postReadTimerInterval);
 
-      timerLocked = false;
       document.getElementById("readerLine").textContent = "";
       document.getElementById("loading").style.display = "block";
       document.getElementById("answer").style.display = "none";
@@ -162,6 +163,7 @@
 
       buzzedIn = false;
       readingStopped = false;
+      timerLocked = false;
       wordIndex = 0;
       currentWords = [];
 
@@ -200,7 +202,6 @@
         if (wordIndex >= currentWords.length) {
           clearInterval(readingInterval);
           if (!buzzedIn) {
-            startBuzzerTimer();
             startPostReadTimer();
           }
         }
@@ -209,6 +210,7 @@
 
     function buzzed() {
       if (timerLocked) return;
+
       buzzedIn = true;
       readingStopped = true;
       clearInterval(readingInterval);
@@ -228,24 +230,6 @@
           clearInterval(buzzTimerInterval);
           timerDiv.style.display = "none";
           timerLocked = true;
-          document.getElementById("answerInputDiv").style.display = "none";
-          showCorrectAnswer();
-        }
-      }, 1000);
-    }
-
-    function startBuzzerTimer() {
-      let time = 5;
-      const timerDiv = document.getElementById("buzzerTimer");
-      timerDiv.style.display = "block";
-      timerDiv.textContent = `⏱ Buzz Timer: ${time}`;
-      buzzTimerInterval = setInterval(() => {
-        time--;
-        timerDiv.textContent = `⏱ Buzz Timer: ${time}`;
-        if (time <= 0) {
-          clearInterval(buzzTimerInterval);
-          timerDiv.style.display = "none";
-          showCorrectAnswer();
         }
       }, 1000);
     }
@@ -261,6 +245,7 @@
         if (time <= 0) {
           clearInterval(postReadTimerInterval);
           timerDiv.style.display = "none";
+          timerLocked = true;
           showCorrectAnswer();
         }
       }, 1000);
@@ -273,21 +258,15 @@
       const correctAnswer = questionData.tossup_answer.trim().toLowerCase();
       const result = userAnswer && correctAnswer.includes(userAnswer) ? "✅ Correct!" : "❌ Incorrect.";
 
-      clearInterval(buzzTimerInterval);
-      document.getElementById("buzzerTimer").style.display = "none";
       document.getElementById("answer").innerHTML = `${result}<br><strong>Correct Answer:</strong> ${questionData.tossup_answer}`;
       document.getElementById("answer").style.display = "block";
-      document.getElementById("answerInputDiv").style.display = "none";
       timerLocked = true;
 
-      const mode = document.querySelector('input[name="bonusMode"]:checked').value;
-      if (result.includes("Correct") && mode !== "never") {
-        document.getElementById("showBonusBtn").style.display = "inline";
-      }
-
-      if (result.includes("Incorrect")) {
-        readingStopped = true;
-        clearInterval(readingInterval);
+      if (result.includes("Correct")) {
+        const mode = document.querySelector('input[name="bonusMode"]:checked').value;
+        if (mode !== "never") {
+          document.getElementById("showBonusBtn").style.display = "inline";
+        }
       }
     }
 
@@ -318,7 +297,7 @@
     }
 
     function showCorrectAnswer() {
-      document.getElementById("answer").innerHTML = `<strong>Time's up.</strong><br><strong>Correct Answer:</strong> ${questionData.tossup_answer}`;
+      document.getElementById("answer").innerHTML = `⏱ Time's up.<br><strong>Correct Answer:</strong> ${questionData.tossup_answer}`;
       document.getElementById("answer").style.display = "block";
     }
   </script>
