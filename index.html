@@ -58,7 +58,6 @@
 <body>
   <h1>🔬 SciBowl QBReader</h1>
 
-  <!-- Category and difficulty filters -->
   <h3>Choose categories:</h3>
   <label><input type="checkbox" id="selectAllCats" /> Select All</label><br>
   <div id="categoryList">
@@ -92,7 +91,6 @@
   <button onclick="loadQuestion()">Load Question</button>
   <button id="pauseBtn" onclick="togglePause()" style="display:none">Pause</button>
 
-  <!-- Display areas -->
   <div id="loading" class="loading">Loading question...</div>
   <div id="questionArea"><div id="readerLine"></div></div>
   <div id="buzzerTimer"></div>
@@ -227,6 +225,7 @@
         if (time <= 0) {
           clearInterval(buzzTimerInterval);
           timerDiv.style.display = "none";
+          showCorrectAnswer();
         }
       }, 1000);
     }
@@ -242,6 +241,7 @@
         if (time <= 0) {
           clearInterval(buzzTimerInterval);
           timerDiv.style.display = "none";
+          showCorrectAnswer();
         }
       }, 1000);
     }
