@@ -204,8 +204,8 @@
       readingStopped = true;
       clearInterval(readingInterval);
       clearInterval(buzzTimerInterval);
-
       document.getElementById("buzzBtn").style.display = "none";
+      document.getElementById("buzzerTimer").style.display = "none";
       document.getElementById("answerInputDiv").style.display = "block";
     }
 
@@ -239,6 +239,23 @@
         readingStopped = false;
         startWordReading();
       } else {
-        const bonusPref = document.querySelector('input[name=\"bonusMode\"]:checked').value;
-        if (bonusPref === \"auto\" || bonusPref === \"tossup\") {
-          document.getElementById(\"showBonusBtn\").style.display = \"inline\";\n        }\n      }\n    }\n\n    function showBonus() {\n      document.getElementById(\"bonus\").textContent = questionData.bonus_question;\n      document.getElementById(\"bonus\").style.display = \"block\";\n      document.getElementById(\"showBonusAnswerBtn\").style.display = \"inline\";\n    }\n\n    function showBonusAnswer() {\n      document.getElementById(\"bonusAnswer\").textContent = \"Bonus Answer: \" + questionData.bonus_answer;\n      document.getElementById(\"bonusAnswer\").style.display = \"block\";\n    }\n  </script>\n</body>\n</html>\n```\n\nLet me know the next tweak!
+        const bonusPref = document.querySelector('input[name="bonusMode"]:checked').value;
+        if (bonusPref === "auto" || bonusPref === "tossup") {
+          document.getElementById("showBonusBtn").style.display = "inline";
+        }
+      }
+    }
+
+    function showBonus() {
+      document.getElementById("bonus").textContent = questionData.bonus_question;
+      document.getElementById("bonus").style.display = "block";
+      document.getElementById("showBonusAnswerBtn").style.display = "inline";
+    }
+
+    function showBonusAnswer() {
+      document.getElementById("bonusAnswer").textContent = "Bonus Answer: " + questionData.bonus_answer;
+      document.getElementById("bonusAnswer").style.display = "block";
+    }
+  </script>
+</body>
+</html>
