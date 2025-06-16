@@ -215,7 +215,6 @@
 
       document.getElementById("buzzBtn").style.display = "none";
       document.getElementById("answerInputDiv").style.display = "block";
-
       let time = 5;
       const timerDiv = document.getElementById("buzzerTimer");
       timerDiv.style.display = "block";
@@ -226,6 +225,7 @@
         if (time <= 0) {
           clearInterval(buzzTimerInterval);
           timerDiv.style.display = "none";
+          showCorrectAnswer();
         }
       }, 1000);
     }
@@ -241,6 +241,8 @@
         if (time <= 0) {
           clearInterval(buzzTimerInterval);
           timerDiv.style.display = "none";
+          document.getElementById("readerLine").textContent = questionData.tossup_question;
+          showCorrectAnswer();
         }
       }, 1000);
     }
@@ -256,6 +258,7 @@
         if (time <= 0) {
           clearInterval(postReadTimerInterval);
           timerDiv.style.display = "none";
+          document.getElementById("readerLine").textContent = questionData.tossup_question;
           showCorrectAnswer();
         }
       }, 1000);
@@ -264,16 +267,19 @@
     function submitAnswer() {
       const userAnswer = document.getElementById("userAnswer").value.trim().toLowerCase();
       const correctAnswer = questionData.tossup_answer.trim().toLowerCase();
-      const isCorrect = userAnswer && correctAnswer.includes(userAnswer);
-      const result = isCorrect ? "✅ Correct!" : "❌ Incorrect.";
+      const result = userAnswer && correctAnswer.includes(userAnswer) ? "✅ Correct!" : "❌ Incorrect.";
 
-      document.getElementById("readerLine").textContent = questionData.tossup_question;
       document.getElementById("answer").innerHTML = `${result}<br><strong>Correct Answer:</strong> ${questionData.tossup_answer}`;
       document.getElementById("answer").style.display = "block";
 
       const mode = document.querySelector('input[name="bonusMode"]:checked').value;
-      if (isCorrect && mode !== "never") {
+      if (result.includes("Correct") && mode !== "never") {
         document.getElementById("showBonusBtn").style.display = "inline";
+      }
+
+      if (result.includes("Incorrect")) {
+        document.getElementById("readerLine").textContent = questionData.tossup_question;
+        readingStopped = true;
       }
     }
 
@@ -294,6 +300,9 @@
         timerDiv.textContent = `⏳ Bonus Timer: ${time}`;
         if (time <= 0) {
           clearInterval(bonusTimerInterval);
+          document.getElementById("bonus").textContent = "Bonus: " + questionData.bonus_question;
+          document.getElementById("bonusAnswer").textContent = "Bonus Answer: " + questionData.bonus_answer;
+          document.getElementById("bonusAnswer").style.display = "block";
         }
       }, 1000);
     }
