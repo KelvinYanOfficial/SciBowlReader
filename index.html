@@ -8,7 +8,7 @@
     body { font-family: Arial, sans-serif; max-width: 700px; margin: auto; padding: 20px; }
     .line { margin: 10px 0; }
     button { margin-top: 10px; }
-    #answer, #bonus, #bonusAnswer { display: none; margin-top: 15px; font-weight: bold; }
+    #answer, #bonus, #bonusAnswer, #buzzerTimer, #bonusTimer { display: none; margin-top: 15px; font-weight: bold; }
     #speedLabel { margin-left: 10px; font-weight: bold; }
     #questionArea { min-height: 100px; }
   </style>
@@ -35,26 +35,32 @@
     <label><input type="checkbox" value="high_school" /> High School</label><br>
   </div>
 
+  <h3>Show bonus:</h3>
+  <label><input type="radio" name="bonusMode" value="auto" checked> Always</label>
+  <label><input type="radio" name="bonusMode" value="tossup"> Only if Tossup Correct</label>
+
   <h3>Reading speed:</h3>
-  <input type="range" id="speedSlider" min="0.1" max="2" step="0.1" value="0.5" />
+  <input type="range" id="speedSlider" min="0.1" max="1" step="0.1" value="0.5" />
   <span id="speedLabel">0.5s per word</span>
 
   <br><br>
   <button onclick="loadQuestion()">Load Question</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">Pause</button>
 
   <div id="questionArea"></div>
+  <div id="buzzerTimer"></div>
+  <button id="buzzBtn" style="display:none" onclick="buzzed()">Buzz!</button>
   <button id="showAnswerBtn" style="display:none" onclick="showAnswer()">Show Tossup Answer</button>
   <div id="answer"></div>
   <button id="showBonusBtn" style="display:none" onclick="showBonus()">Show Bonus</button>
   <div id="bonus"></div>
+  <div id="bonusTimer"></div>
   <button id="showBonusAnswerBtn" style="display:none" onclick="showBonusAnswer()">Show Bonus Answer</button>
   <div id="bonusAnswer"></div>
 
   <script>
-    let currentWords = [];
-    let wordIndex = 0;
-    let questionData = null;
-    let readingInterval = null;
+    let currentWords = [], wordIndex = 0, readingInterval = null, paused = false;
+    let questionData = null, bonusAllowed = true;
 
     const slider = document.getElementById("speedSlider");
     const speedLabel = document.getElementById("speedLabel");
@@ -70,6 +76,7 @@
     async function loadQuestion() {
       const categories = getCheckedValues("categoryList");
       const difficulties = getCheckedValues("difficultyList");
+      bonusAllowed = false;
 
       let payload = null;
       if (categories.length || difficulties.length) {
@@ -94,14 +101,19 @@
         questionData = data.questions[0];
         currentWords = questionData.tossup_question.split(/\s+/);
         wordIndex = 0;
+        paused = false;
 
         document.getElementById("questionArea").innerHTML = `<h3>${questionData.category}</h3><div id="readerLine"></div>`;
         document.getElementById("answer").style.display = "none";
         document.getElementById("bonus").style.display = "none";
         document.getElementById("bonusAnswer").style.display = "none";
+        document.getElementById("buzzerTimer").style.display = "none";
+        document.getElementById("buzzBtn").style.display = "none";
+        document.getElementById("bonusTimer").style.display = "none";
         document.getElementById("showAnswerBtn").style.display = "none";
         document.getElementById("showBonusBtn").style.display = "none";
         document.getElementById("showBonusAnswerBtn").style.display = "none";
+        document.getElementById("pauseBtn").style.display = "inline";
 
         startWordReading();
       } catch (err) {
@@ -118,27 +130,71 @@
       lineDiv.textContent = "";
 
       readingInterval = setInterval(() => {
-        if (wordIndex < currentWords.length) {
+        if (!paused && wordIndex < currentWords.length) {
           lineDiv.textContent += currentWords[wordIndex++] + " ";
         }
-
         if (wordIndex >= currentWords.length) {
           clearInterval(readingInterval);
-          document.getElementById("showAnswerBtn").style.display = "inline";
+          startBuzzerTimer();
         }
       }, delay);
+    }
+
+    function togglePause() {
+      paused = !paused;
+      document.getElementById("pauseBtn").textContent = paused ? "Resume" : "Pause";
+    }
+
+    function startBuzzerTimer() {
+      let time = 5;
+      document.getElementById("buzzerTimer").style.display = "block";
+      document.getElementById("buzzBtn").style.display = "inline";
+      const timerDiv = document.getElementById("buzzerTimer");
+      timerDiv.textContent = `⏱ Buzz Timer: ${time}`;
+      const interval = setInterval(() => {
+        time--;
+        timerDiv.textContent = `⏱ Buzz Timer: ${time}`;
+        if (time <= 0) {
+          clearInterval(interval);
+          showAnswer();
+        }
+      }, 1000);
+    }
+
+    function buzzed() {
+      bonusAllowed = true;
+      showAnswer();
     }
 
     function showAnswer() {
       document.getElementById("answer").textContent = "Answer: " + questionData.tossup_answer;
       document.getElementById("answer").style.display = "block";
-      document.getElementById("showBonusBtn").style.display = "inline";
+      document.getElementById("buzzBtn").style.display = "none";
+      document.getElementById("buzzerTimer").style.display = "none";
+
+      const mode = document.querySelector('input[name="bonusMode"]:checked').value;
+      if (mode === "auto" || bonusAllowed) {
+        document.getElementById("showBonusBtn").style.display = "inline";
+      }
     }
 
     function showBonus() {
       document.getElementById("bonus").textContent = "Bonus: " + questionData.bonus_question;
       document.getElementById("bonus").style.display = "block";
+      startBonusTimer();
       document.getElementById("showBonusAnswerBtn").style.display = "inline";
+    }
+
+    function startBonusTimer() {
+      let time = 20;
+      document.getElementById("bonusTimer").style.display = "block";
+      const timerDiv = document.getElementById("bonusTimer");
+      timerDiv.textContent = `⏳ Bonus Timer: ${time}`;
+      const interval = setInterval(() => {
+        time--;
+        timerDiv.textContent = `⏳ Bonus Timer: ${time}`;
+        if (time <= 0) clearInterval(interval);
+      }, 1000);
     }
 
     function showBonusAnswer() {
