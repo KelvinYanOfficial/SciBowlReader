@@ -116,7 +116,7 @@
     let buzzTimerInterval = null, postReadTimerInterval = null, bonusTimerInterval = null;
 
     document.addEventListener("keydown", e => {
-      if (e.code === "Space" && document.getElementById("buzzBtn").style.display !== "none" && !timerLocked) {
+      if (e.code === "Space" && document.getElementById("buzzBtn").style.display !== "none") {
         e.preventDefault();
         buzzed();
       }
@@ -146,6 +146,7 @@
       clearInterval(buzzTimerInterval);
       clearInterval(postReadTimerInterval);
 
+      timerLocked = false;
       document.getElementById("readerLine").textContent = "";
       document.getElementById("loading").style.display = "block";
       document.getElementById("answer").style.display = "none";
@@ -161,7 +162,6 @@
 
       buzzedIn = false;
       readingStopped = false;
-      timerLocked = false;
       wordIndex = 0;
       currentWords = [];
 
@@ -200,6 +200,7 @@
         if (wordIndex >= currentWords.length) {
           clearInterval(readingInterval);
           if (!buzzedIn) {
+            startBuzzerTimer();
             startPostReadTimer();
           }
         }
@@ -207,16 +208,15 @@
     }
 
     function buzzed() {
+      if (timerLocked) return;
       buzzedIn = true;
       readingStopped = true;
-      timerLocked = true;
       clearInterval(readingInterval);
       clearInterval(buzzTimerInterval);
       clearInterval(postReadTimerInterval);
 
       document.getElementById("buzzBtn").style.display = "none";
       document.getElementById("answerInputDiv").style.display = "block";
-
       let time = 10;
       const timerDiv = document.getElementById("buzzerTimer");
       timerDiv.style.display = "block";
@@ -228,6 +228,23 @@
           clearInterval(buzzTimerInterval);
           timerDiv.style.display = "none";
           timerLocked = true;
+          document.getElementById("answerInputDiv").style.display = "none";
+          showCorrectAnswer();
+        }
+      }, 1000);
+    }
+
+    function startBuzzerTimer() {
+      let time = 5;
+      const timerDiv = document.getElementById("buzzerTimer");
+      timerDiv.style.display = "block";
+      timerDiv.textContent = `⏱ Buzz Timer: ${time}`;
+      buzzTimerInterval = setInterval(() => {
+        time--;
+        timerDiv.textContent = `⏱ Buzz Timer: ${time}`;
+        if (time <= 0) {
+          clearInterval(buzzTimerInterval);
+          timerDiv.style.display = "none";
           showCorrectAnswer();
         }
       }, 1000);
@@ -250,14 +267,17 @@
     }
 
     function submitAnswer() {
-      if (timerLocked) return;
+      if (!buzzedIn || timerLocked) return;
 
       const userAnswer = document.getElementById("userAnswer").value.trim().toLowerCase();
       const correctAnswer = questionData.tossup_answer.trim().toLowerCase();
       const result = userAnswer && correctAnswer.includes(userAnswer) ? "✅ Correct!" : "❌ Incorrect.";
 
+      clearInterval(buzzTimerInterval);
+      document.getElementById("buzzerTimer").style.display = "none";
       document.getElementById("answer").innerHTML = `${result}<br><strong>Correct Answer:</strong> ${questionData.tossup_answer}`;
       document.getElementById("answer").style.display = "block";
+      document.getElementById("answerInputDiv").style.display = "none";
       timerLocked = true;
 
       const mode = document.querySelector('input[name="bonusMode"]:checked').value;
@@ -288,8 +308,6 @@
         timerDiv.textContent = `⏳ Bonus Timer: ${time}`;
         if (time <= 0) {
           clearInterval(bonusTimerInterval);
-          document.getElementById("bonusAnswer").textContent = "Bonus Answer: " + questionData.bonus_answer;
-          document.getElementById("bonusAnswer").style.display = "block";
         }
       }, 1000);
     }
@@ -302,7 +320,6 @@
     function showCorrectAnswer() {
       document.getElementById("answer").innerHTML = `<strong>Time's up.</strong><br><strong>Correct Answer:</strong> ${questionData.tossup_answer}`;
       document.getElementById("answer").style.display = "block";
-      timerLocked = true;
     }
   </script>
 </body>
