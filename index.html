@@ -56,7 +56,7 @@
   </style>
 </head>
 <body>
-  <h1>🔬 SciBowl QBReader</h1>
+  <h1>🔬 SciBowlReader</h1>
 
   <h3>Choose categories:</h3>
   <label><input type="checkbox" id="selectAllCats" /> Select All</label><br>
@@ -189,9 +189,26 @@
         }
         if (wordIndex >= currentWords.length) {
           clearInterval(readingInterval);
-          if (!buzzedIn) startBuzzerTimer();
+          if (!buzzedIn) startPostReadingTimer();
         }
       }, speed);
+    }
+
+    function startPostReadingTimer() {
+      let time = 5;
+      const timerDiv = document.getElementById("buzzerTimer");
+      timerDiv.style.display = "block";
+      document.getElementById("buzzBtn").style.display = "inline";
+      timerDiv.textContent = `⏱ Buzz Timer: ${time}`;
+      buzzTimerInterval = setInterval(() => {
+        time--;
+        timerDiv.textContent = `⏱ Buzz Timer: ${time}`;
+        if (time <= 0) {
+          clearInterval(buzzTimerInterval);
+          timerDiv.style.display = "none";
+          document.getElementById("buzzBtn").style.display = "none";
+        }
+      }, 1000);
     }
 
     function togglePause() {
@@ -253,4 +270,3 @@
   </script>
 </body>
 </html>
-
