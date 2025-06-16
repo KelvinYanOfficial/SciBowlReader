@@ -7,13 +7,14 @@
   <style>
     body { font-family: Arial, sans-serif; max-width: 700px; margin: auto; padding: 20px; }
     button { margin-top: 10px; }
-    #answer, #bonus, #bonusAnswer, #buzzerTimer, #bonusTimer, #loading, #answerInputDiv { display: none; margin-top: 15px; font-weight: bold; }
+    #answer, #bonus, #bonusAnswer, #buzzerTimer, #bonusTimer, #loading, #answerInputDiv, #bonusInputDiv { display: none; margin-top: 15px; font-weight: bold; }
     #questionArea { min-height: 100px; margin-top: 10px; }
-    #readerLine { margin-top: 10px; font-size: 1.1em; white-space: pre-wrap; }
+    #readerLine, #bonusReaderLine { margin-top: 10px; font-size: 1.1em; white-space: pre-wrap; }
     .loading { color: gray; font-style: italic; }
     input[type=range] {
       -webkit-appearance: none;
       width: 100%;
+      height: 10px;
       background: transparent;
     }
     input[type=range]::-webkit-slider-thumb {
@@ -23,11 +24,12 @@
       border-radius: 50%;
       background: blue;
       cursor: pointer;
-      margin-top: -6px;
+      margin-top: -4px;
     }
     input[type=range]::-webkit-slider-runnable-track {
-      height: 4px;
+      height: 8px;
       background: lightgray;
+      border-radius: 4px;
     }
     #speedLabel { font-weight: bold; margin-top: 5px; display: block; }
   </style>
@@ -58,6 +60,11 @@
   <h3>Show bonus:</h3>
   <label><input type="radio" name="bonusMode" value="auto" checked> Always</label>
   <label><input type="radio" name="bonusMode" value="tossup"> Only if Tossup Correct</label>
+  <label><input type="radio" name="bonusMode" value="none"> Do Not Show</label>
+
+  <h3>Packet year range:</h3>
+  <input type="number" id="yearMin" placeholder="From (e.g. 2010)" style="width: 120px;" />
+  <input type="number" id="yearMax" placeholder="To (e.g. 2023)" style="width: 120px;" />
 
   <h3>Reading speed <span style="font-weight: normal; color: gray">(Recommended: 5–8)</span></h3>
   <input type="range" id="speedSlider" min="1" max="10" step="1" value="7" />
@@ -78,13 +85,18 @@
   <div id="answer"></div>
   <button id="showBonusBtn" style="display:none" onclick="showBonus()">Show Bonus</button>
   <div id="bonus"></div>
+  <div id="bonusReaderLine"></div>
   <div id="bonusTimer"></div>
-  <button id="showBonusAnswerBtn" style="display:none" onclick="showBonusAnswer()">Show Bonus Answer</button>
+  <div id="bonusInputDiv">
+    <input type="text" id="userBonusAnswer" placeholder="Bonus answer..." />
+    <button onclick="submitBonusAnswer()">Submit Bonus Answer</button>
+  </div>
   <div id="bonusAnswer"></div>
 
   <script>
     let currentWords = [], wordIndex = 0, readingInterval = null, paused = false;
-    let questionData = null, bonusAllowed = false;
+    let bonusWords = [], bonusIndex = 0, bonusInterval = null;
+    let questionData = null, bonusAllowed = false, buzzExpired = false;
 
     document.addEventListener("keydown", e => {
       if (e.code === "Space" && document.getElementById("buzzBtn").style.display !== "none") {
@@ -115,23 +127,25 @@
     async function loadQuestion() {
       const categories = getCheckedValues("categoryList");
       const difficulties = getCheckedValues("difficultyList");
+      const yearMin = document.getElementById("yearMin").value;
+      const yearMax = document.getElementById("yearMax").value;
       bonusAllowed = false;
+      buzzExpired = false;
 
-      let payload = null;
-      if (categories.length || difficulties.length) {
-        payload = {};
-        if (categories.length) payload.categories = categories;
-        if (difficulties.length) payload.difficulties = difficulties;
-      }
+      let payload = {};
+      if (categories.length) payload.categories = categories;
+      if (difficulties.length) payload.difficulties = difficulties;
+      if (yearMin) payload.yearMin = parseInt(yearMin);
+      if (yearMax) payload.yearMax = parseInt(yearMax);
 
       document.getElementById("loading").style.display = "block";
       document.getElementById("questionArea").innerHTML = "";
 
       try {
         const res = await fetch("https://sci-bowl-proxy.onrender.com/api/random", {
-          method: payload ? "POST" : "GET",
+          method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: payload ? JSON.stringify(payload) : null
+          body: JSON.stringify(payload)
         });
 
         const data = await res.json();
@@ -147,9 +161,12 @@
         wordIndex = 0;
         paused = false;
 
-        document.getElementById("questionArea").innerHTML = `<h3>${questionData.category}</h3><div id='readerLine'></div>`;
+        const packetInfo = `${questionData.source || ''} | Q#${questionData.id}`;
+        document.getElementById("questionArea").innerHTML = `<h3>${questionData.category}</h3><p>${packetInfo}</p><div id='readerLine'></div>`;
+
         document.getElementById("answer").style.display = "none";
         document.getElementById("bonus").style.display = "none";
+        document.getElementById("bonusReaderLine").style.display = "none";
         document.getElementById("bonusAnswer").style.display = "none";
         document.getElementById("buzzerTimer").style.display = "none";
         document.getElementById("buzzBtn").style.display = "none";
@@ -157,6 +174,7 @@
         document.getElementById("showBonusBtn").style.display = "none";
         document.getElementById("showBonusAnswerBtn").style.display = "none";
         document.getElementById("pauseBtn").style.display = "inline";
+        document.getElementById("bonusInputDiv").style.display = "none";
 
         startWordReading();
       } catch (err) {
@@ -198,6 +216,8 @@
         if (time <= 0) {
           clearInterval(interval);
           document.getElementById("buzzBtn").style.display = "none";
+          buzzExpired = true;
+          submitAnswer();
         }
       }, 1000);
     }
@@ -206,9 +226,22 @@
       bonusAllowed = true;
       document.getElementById("answerInputDiv").style.display = "block";
       document.getElementById("buzzBtn").style.display = "none";
+      let time = 5;
+      const timerDiv = document.getElementById("buzzerTimer");
+      timerDiv.textContent = `⏱ Extra Time: ${time}`;
+      const interval = setInterval(() => {
+        time--;
+        timerDiv.textContent = `⏱ Extra Time: ${time}`;
+        if (time <= 0) clearInterval(interval);
+      }, 1000);
     }
 
     function submitAnswer() {
+      if (buzzExpired) {
+        document.getElementById("answer").innerHTML = `⛔ Time's up!<br><strong>Correct Answer:</strong> ${questionData.tossup_answer}`;
+        document.getElementById("answer").style.display = "block";
+        return;
+      }
       const userAnswer = document.getElementById("userAnswer").value.trim().toLowerCase();
       const correctAnswer = questionData.tossup_answer.trim().toLowerCase();
       const result = userAnswer && correctAnswer.includes(userAnswer) ? "✅ Correct!" : "❌ Incorrect.";
@@ -217,7 +250,7 @@
       document.getElementById("answer").style.display = "block";
 
       const mode = document.querySelector('input[name="bonusMode"]:checked').value;
-      if (mode === "auto" || result.includes("Correct")) {
+      if ((mode === "auto" || result.includes("Correct")) && mode !== "none") {
         document.getElementById("showBonusBtn").style.display = "inline";
       }
     }
@@ -225,8 +258,33 @@
     function showBonus() {
       document.getElementById("bonus").textContent = "Bonus: " + questionData.bonus_question;
       document.getElementById("bonus").style.display = "block";
+      document.getElementById("bonusReaderLine").style.display = "block";
+      bonusWords = questionData.bonus_question.split(/\s+/);
+      bonusIndex = 0;
+      startBonusReading();
       startBonusTimer();
-      document.getElementById("showBonusAnswerBtn").style.display = "inline";
+    }
+
+    function startBonusReading() {
+      const lineDiv = document.getElementById("bonusReaderLine");
+      lineDiv.textContent = "";
+      bonusInterval = setInterval(() => {
+        if (bonusIndex < bonusWords.length) {
+          lineDiv.textContent += bonusWords[bonusIndex++] + " ";
+        } else {
+          clearInterval(bonusInterval);
+          document.getElementById("bonusInputDiv").style.display = "block";
+        }
+      }, 1100 - (parseInt(slider.value) * 100));
+    }
+
+    function submitBonusAnswer() {
+      const userAnswer = document.getElementById("userBonusAnswer").value.trim().toLowerCase();
+      const correctAnswer = questionData.bonus_answer.trim().toLowerCase();
+      const result = userAnswer && correctAnswer.includes(userAnswer) ? "✅ Correct!" : "❌ Incorrect.";
+
+      document.getElementById("bonusAnswer").innerHTML = `${result}<br><strong>Bonus Answer:</strong> ${questionData.bonus_answer}`;
+      document.getElementById("bonusAnswer").style.display = "block";
     }
 
     function startBonusTimer() {
@@ -239,11 +297,6 @@
         timerDiv.textContent = `⏳ Bonus Timer: ${time}`;
         if (time <= 0) clearInterval(interval);
       }, 1000);
-    }
-
-    function showBonusAnswer() {
-      document.getElementById("bonusAnswer").textContent = "Bonus Answer: " + questionData.bonus_answer;
-      document.getElementById("bonusAnswer").style.display = "block";
     }
   </script>
 </body>
