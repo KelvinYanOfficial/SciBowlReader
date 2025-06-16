@@ -5,14 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>SciBowl QBReader</title>
   <style>
-    body { font-family: Arial, sans-serif; max-width: 700px; margin: auto; padding: 20px; }
-    button { margin-top: 10px; }
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 700px;
+      margin: auto;
+      padding: 20px;
+    }
+    button {
+      margin-top: 10px;
+    }
     #answer, #bonus, #bonusAnswer, #buzzerTimer, #bonusTimer, #loading, #answerInputDiv, #bonusInputDiv {
       display: none;
       margin-top: 15px;
       font-weight: bold;
     }
-    #questionArea { min-height: 100px; margin-top: 10px; }
+    #questionArea {
+      min-height: 100px;
+      margin-top: 10px;
+    }
     #readerLine, #bonusLine {
       margin-top: 10px;
       font-size: 1.1em;
@@ -25,8 +35,9 @@
     input[type=range] {
       -webkit-appearance: none;
       width: 100%;
-      height: 6px;
+      height: 8px;
       background: lightgray;
+      border-radius: 5px;
     }
     input[type=range]::-webkit-slider-thumb {
       -webkit-appearance: none;
@@ -35,7 +46,7 @@
       border-radius: 50%;
       background: blue;
       cursor: pointer;
-      margin-top: -6px;
+      margin-top: -4px;
     }
     #speedLabel {
       font-weight: bold;
@@ -101,8 +112,7 @@
 
   <script>
     let currentWords = [], wordIndex = 0, readingInterval = null, paused = false;
-    let bonusWords = [], bonusIndex = 0, bonusReadingInterval = null;
-    let questionData = null, bonusAllowed = false, buzzTimeout = null;
+    let questionData = null, bonusAllowed = false;
 
     document.addEventListener("keydown", e => {
       if (e.code === "Space" && document.getElementById("buzzBtn").style.display !== "none") {
@@ -112,7 +122,8 @@
     });
 
     document.getElementById("selectAllCats").addEventListener("change", function() {
-      document.querySelectorAll("#categoryList input[type='checkbox']").forEach(cb => cb.checked = this.checked);
+      const checkboxes = document.querySelectorAll("#categoryList input[type='checkbox']");
+      checkboxes.forEach(cb => cb.checked = this.checked);
     });
 
     const slider = document.getElementById("speedSlider");
@@ -121,13 +132,7 @@
       speedLabel.textContent = `Speed: ${slider.value}`;
       if (readingInterval) {
         clearInterval(readingInterval);
-        readingInterval = null;
-        startWordReading();
-      }
-      if (bonusReadingInterval) {
-        clearInterval(bonusReadingInterval);
-        bonusReadingInterval = null;
-        startBonusReading();
+        startWordReading(true);
       }
     });
 
@@ -149,6 +154,11 @@
 
       document.getElementById("loading").style.display = "block";
       document.getElementById("questionArea").innerHTML = "";
+      document.getElementById("readerLine")?.remove();
+      clearInterval(readingInterval);
+      readingInterval = null;
+      wordIndex = 0;
+      paused = false;
 
       try {
         const res = await fetch("https://sci-bowl-proxy.onrender.com/api/random", {
@@ -167,10 +177,10 @@
 
         questionData = data.questions[0];
         currentWords = questionData.tossup_question.split(/\s+/);
-        wordIndex = 0;
-        paused = false;
 
-        document.getElementById("questionArea").innerHTML = `<h3>${questionData.category} — Packet: ${questionData.source}, Q#${questionData.id}</h3><div id='readerLine'></div>`;
+        const container = document.getElementById("questionArea");
+        container.innerHTML = `<h3>${questionData.category} | ${questionData.source} | Q${questionData.id}</h3><div id='readerLine'></div>`;
+
         document.getElementById("answer").style.display = "none";
         document.getElementById("bonus").style.display = "none";
         document.getElementById("bonusAnswer").style.display = "none";
@@ -189,10 +199,12 @@
       }
     }
 
-    function startWordReading() {
+    function startWordReading(keepText = false) {
       if (readingInterval) clearInterval(readingInterval);
-      const lineDiv = document.getElementById("readerLine");
-      lineDiv.textContent = "";
+      const lineDiv = document.getElementById("readerLine") || document.createElement("div");
+      lineDiv.id = "readerLine";
+      document.getElementById("questionArea").appendChild(lineDiv);
+
       readingInterval = setInterval(() => {
         if (!paused && wordIndex < currentWords.length) {
           lineDiv.textContent += currentWords[wordIndex++] + " ";
@@ -209,17 +221,17 @@
       document.getElementById("pauseBtn").textContent = paused ? "Resume" : "Pause";
     }
 
-    function startBuzzerTimer(extra = 0) {
-      let time = 5 + extra;
+    function startBuzzerTimer() {
+      let time = 5;
       document.getElementById("buzzerTimer").style.display = "block";
       document.getElementById("buzzBtn").style.display = "inline";
       const timerDiv = document.getElementById("buzzerTimer");
       timerDiv.textContent = `⏱ Buzz Timer: ${time}`;
-      buzzTimeout = setInterval(() => {
+      const interval = setInterval(() => {
         time--;
         timerDiv.textContent = `⏱ Buzz Timer: ${time}`;
         if (time <= 0) {
-          clearInterval(buzzTimeout);
+          clearInterval(interval);
           document.getElementById("buzzBtn").style.display = "none";
           document.getElementById("answer").style.display = "block";
           document.getElementById("answer").innerHTML = `❌ Time's up!<br><strong>Correct Answer:</strong> ${questionData.tossup_answer}`;
@@ -229,10 +241,8 @@
 
     function buzzed() {
       bonusAllowed = true;
-      clearInterval(buzzTimeout);
       document.getElementById("answerInputDiv").style.display = "block";
       document.getElementById("buzzBtn").style.display = "none";
-      startBuzzerTimer(5);
     }
 
     function submitAnswer() {
@@ -244,36 +254,17 @@
       document.getElementById("answer").style.display = "block";
 
       const mode = document.querySelector('input[name="bonusMode"]:checked').value;
-      if (mode === "auto" || (mode === "tossup" && result.includes("Correct"))) {
+      if ((mode === "auto" || result.includes("Correct")) && mode !== "never") {
         document.getElementById("showBonusBtn").style.display = "inline";
       }
     }
 
     function showBonus() {
-      const mode = document.querySelector('input[name="bonusMode"]:checked').value;
-      if (mode === "never") return;
-
-      bonusWords = questionData.bonus_question.split(/\s+/);
-      bonusIndex = 0;
-      document.getElementById("bonus").innerHTML = `<div id='bonusLine'></div>`;
+      document.getElementById("bonus").textContent = "Bonus: " + questionData.bonus_question;
       document.getElementById("bonus").style.display = "block";
-      startBonusReading();
+      startBonusTimer();
       document.getElementById("bonusInputDiv").style.display = "block";
       document.getElementById("showBonusAnswerBtn").style.display = "inline";
-    }
-
-    function startBonusReading() {
-      const bonusLine = document.getElementById("bonusLine");
-      bonusLine.textContent = "";
-      bonusReadingInterval = setInterval(() => {
-        if (!paused && bonusIndex < bonusWords.length) {
-          bonusLine.textContent += bonusWords[bonusIndex++] + " ";
-        }
-        if (bonusIndex >= bonusWords.length) {
-          clearInterval(bonusReadingInterval);
-          startBonusTimer();
-        }
-      }, 1100 - (parseInt(slider.value) * 100));
     }
 
     function startBonusTimer() {
@@ -289,11 +280,11 @@
     }
 
     function submitBonusAnswer() {
-      const userBonusAnswer = document.getElementById("userBonusAnswer").value.trim().toLowerCase();
-      const correctBonus = questionData.bonus_answer.trim().toLowerCase();
-      const result = userBonusAnswer && correctBonus.includes(userBonusAnswer) ? "✅ Correct!" : "❌ Incorrect.";
-      document.getElementById("bonusAnswer").textContent = `${result}\nBonus Answer: ${questionData.bonus_answer}`;
-      document.getElementById("bonusAnswer").style.display = "block";
+      const userAnswer = document.getElementById("userBonusAnswer").value.trim().toLowerCase();
+      const correctAnswer = questionData.bonus_answer.trim().toLowerCase();
+      const result = userAnswer && correctAnswer.includes(userAnswer) ? "✅ Correct!" : "❌ Incorrect.";
+
+      alert(`${result}\nBonus Answer: ${questionData.bonus_answer}`);
     }
 
     function showBonusAnswer() {
