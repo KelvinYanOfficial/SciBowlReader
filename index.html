@@ -27,6 +27,18 @@
     <option value="ASTRONOMY">ASTRONOMY</option>
     <option value="COMPUTER SCIENCE">COMPUTER SCIENCE</option>
   </select>
+
+  <br><br>
+
+  <label for="difficulty">Choose difficulty:</label>
+  <select id="difficulty">
+    <option value="">Any</option>
+    <option value="middle_school">Middle School</option>
+    <option value="high_school">High School</option>
+  </select>
+
+  <br><br>
+
   <button onclick="loadQuestion()">Load Question</button>
 
   <div id="questionArea"></div>
@@ -45,75 +57,28 @@
 
     async function loadQuestion() {
       const category = document.getElementById("category").value.trim();
-      const payload = category ? { categories: [category.toUpperCase()] } : null;
+      const difficulty = document.getElementById("difficulty").value;
+
+      const payload = {};
+      if (category) payload.categories = [category.toUpperCase()];
+      if (difficulty) payload.difficulties = [difficulty];
+
+      const hasPayload = Object.keys(payload).length > 0;
 
       try {
         const res = await fetch("https://sci-bowl-proxy.onrender.com/api/random", {
-          method: payload ? "POST" : "GET",
+          method: hasPayload ? "POST" : "GET",
           headers: { "Content-Type": "application/json" },
-          body: payload ? JSON.stringify(payload) : null
+          body: hasPayload ? JSON.stringify(payload) : null
         });
 
         const data = await res.json();
         if (!data.questions || data.questions.length === 0) {
-          document.getElementById("questionArea").innerHTML = `<p style="color:red;">❌ No questions found. Try a different category or leave it blank.</p>`;
+          document.getElementById("questionArea").innerHTML = `<p style="color:red;">❌ No questions found. Try a different category or difficulty.</p>`;
           return;
         }
 
         questionData = data.questions[0];
-        currentLines = questionData.tossup_question.split(/(?<=[.?!])\s+/);
-        lineIndex = 0;
+        currentLines = questionData.tossup_question._
 
-        document.getElementById("questionArea").innerHTML = `<h3>${questionData.category}</h3>`;
-        document.getElementById("answer").style.display = "none";
-        document.getElementById("bonus").style.display = "none";
-        document.getElementById("bonusAnswer").style.display = "none";
-        document.getElementById("showAnswerBtn").style.display = "none";
-        document.getElementById("showBonusBtn").style.display = "none";
-        document.getElementById("showBonusAnswerBtn").style.display = "none";
-
-        startAutoReading();
-      } catch (err) {
-        document.getElementById("questionArea").innerHTML = `<p style="color:red;">⚠️ Failed to load question. Try again later.</p>`;
-        console.error(err);
-      }
-    }
-
-    function startAutoReading() {
-      if (readingInterval) clearInterval(readingInterval);
-
-      readingInterval = setInterval(() => {
-        if (lineIndex < currentLines.length) {
-          const line = document.createElement("div");
-          line.className = "line";
-          line.textContent = currentLines[lineIndex++];
-          document.getElementById("questionArea").appendChild(line);
-        }
-
-        if (lineIndex >= currentLines.length) {
-          clearInterval(readingInterval);
-          document.getElementById("showAnswerBtn").style.display = "inline";
-        }
-      }, 2000); // ⏱ Adjust delay here (in milliseconds)
-    }
-
-    function showAnswer() {
-      document.getElementById("answer").textContent = "Answer: " + questionData.tossup_answer;
-      document.getElementById("answer").style.display = "block";
-      document.getElementById("showBonusBtn").style.display = "inline";
-    }
-
-    function showBonus() {
-      document.getElementById("bonus").textContent = "Bonus: " + questionData.bonus_question;
-      document.getElementById("bonus").style.display = "block";
-      document.getElementById("showBonusAnswerBtn").style.display = "inline";
-    }
-
-    function showBonusAnswer() {
-      document.getElementById("bonusAnswer").textContent = "Bonus Answer: " + questionData.bonus_answer;
-      document.getElementById("bonusAnswer").style.display = "block";
-    }
-  </script>
-</body>
-</html>
 
