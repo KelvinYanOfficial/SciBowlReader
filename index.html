@@ -112,9 +112,7 @@
 
   <script>
     let currentWords = [], wordIndex = 0, readingInterval = null, paused = false;
-    let questionData = null, bonusAllowed = false, timeLeft = 5;
-    const slider = document.getElementById("speedSlider");
-    const speedLabel = document.getElementById("speedLabel");
+    let questionData = null, bonusAllowed = false, timeLeft = 5, buzzTimerInterval = null;
 
     document.addEventListener("keydown", e => {
       if (e.code === "Space" && document.getElementById("buzzBtn").style.display !== "none") {
@@ -128,6 +126,8 @@
       checkboxes.forEach(cb => cb.checked = this.checked);
     });
 
+    const slider = document.getElementById("speedSlider");
+    const speedLabel = document.getElementById("speedLabel");
     slider.addEventListener("input", () => {
       speedLabel.textContent = `Speed: ${slider.value}`;
       if (readingInterval) {
@@ -141,36 +141,41 @@
     }
 
     async function loadQuestion() {
-      const categories = getCheckedValues("categoryList");
-      const difficulties = getCheckedValues("difficultyList");
-      bonusAllowed = false;
-      timeLeft = 5;
-
       clearInterval(readingInterval);
+      clearInterval(buzzTimerInterval);
       document.getElementById("readerLine")?.remove();
-
-      let payload = {};
-      if (categories.length) payload.categories = categories;
-      if (difficulties.length) payload.difficulties = difficulties;
-
-      document.getElementById("loading").style.display = "block";
-      document.getElementById("questionArea").innerHTML = "";
+      document.getElementById("buzzBtn").style.display = "none";
+      document.getElementById("answerInputDiv").style.display = "none";
       document.getElementById("answer").style.display = "none";
       document.getElementById("bonus").style.display = "none";
       document.getElementById("bonusAnswer").style.display = "none";
-      document.getElementById("buzzerTimer").style.display = "none";
-      document.getElementById("buzzBtn").style.display = "none";
       document.getElementById("bonusTimer").style.display = "none";
+      document.getElementById("bonusInputDiv").style.display = "none";
       document.getElementById("showBonusBtn").style.display = "none";
       document.getElementById("showBonusAnswerBtn").style.display = "none";
-      document.getElementById("pauseBtn").style.display = "none";
-      document.getElementById("answerInputDiv").style.display = "none";
+      document.getElementById("buzzerTimer").textContent = '';
+      wordIndex = 0;
+      paused = false;
+      bonusAllowed = false;
+
+      const categories = getCheckedValues("categoryList");
+      const difficulties = getCheckedValues("difficultyList");
+
+      let payload = null;
+      if (categories.length || difficulties.length) {
+        payload = {};
+        if (categories.length) payload.categories = categories;
+        if (difficulties.length) payload.difficulties = difficulties;
+      }
+
+      document.getElementById("loading").style.display = "block";
+      document.getElementById("questionArea").innerHTML = "";
 
       try {
         const res = await fetch("https://sci-bowl-proxy.onrender.com/api/random", {
-          method: "POST",
+          method: payload ? "POST" : "GET",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
+          body: payload ? JSON.stringify(payload) : null
         });
 
         const data = await res.json();
@@ -183,16 +188,14 @@
 
         questionData = data.questions[0];
         currentWords = questionData.tossup_question.split(/\s+/);
-        wordIndex = 0;
-        paused = false;
-
-        const readerDiv = document.createElement("div");
-        readerDiv.id = "readerLine";
-        document.getElementById("questionArea").innerHTML = `<h3>${questionData.category} (${questionData.source})</h3>`;
-        document.getElementById("questionArea").appendChild(readerDiv);
+        const readerLine = document.createElement("div");
+        readerLine.id = "readerLine";
+        document.getElementById("questionArea").innerHTML = `<h3>${questionData.category} — Packet ${questionData.source}</h3>`;
+        document.getElementById("questionArea").appendChild(readerLine);
         document.getElementById("pauseBtn").style.display = "inline";
 
         startWordReading();
+        startBuzzerTimer();
       } catch (err) {
         document.getElementById("loading").style.display = "none";
         document.getElementById("questionArea").innerHTML = `<p style='color:red;'>⚠️ Failed to load question. Try again later.</p>`;
@@ -201,17 +204,13 @@
     }
 
     function startWordReading() {
-      clearInterval(readingInterval);
       const lineDiv = document.getElementById("readerLine");
-
+      if (readingInterval) clearInterval(readingInterval);
       readingInterval = setInterval(() => {
         if (!paused && wordIndex < currentWords.length) {
           lineDiv.textContent += currentWords[wordIndex++] + " ";
         }
-        if (wordIndex >= currentWords.length) {
-          clearInterval(readingInterval);
-          startBuzzerTimer();
-        }
+        if (wordIndex >= currentWords.length) clearInterval(readingInterval);
       }, 1100 - (parseInt(slider.value) * 100));
     }
 
@@ -221,18 +220,18 @@
     }
 
     function startBuzzerTimer() {
-      const timerDiv = document.getElementById("buzzerTimer");
+      timeLeft = 5;
       document.getElementById("buzzerTimer").style.display = "block";
       document.getElementById("buzzBtn").style.display = "inline";
-      timeLeft = 5;
-      const interval = setInterval(() => {
-        timerDiv.textContent = `⏱ Buzz Timer: ${timeLeft}`;
+      updateBuzzTimer();
+      buzzTimerInterval = setInterval(() => {
         timeLeft--;
-        if (timeLeft < 0) {
-          clearInterval(interval);
+        updateBuzzTimer();
+        if (timeLeft <= 0) {
+          clearInterval(buzzTimerInterval);
           document.getElementById("buzzBtn").style.display = "none";
           document.getElementById("answer").style.display = "block";
-          document.getElementById("answer").innerHTML = `❌ Time's up!<br><strong>Correct Answer:</strong> ${questionData.tossup_answer}`;
+          document.getElementById("answer").innerHTML = `❌ Incorrect (time expired).<br><strong>Correct Answer:</strong> ${questionData.tossup_answer}`;
         }
       }, 1000);
     }
@@ -258,25 +257,24 @@
       document.getElementById("answer").style.display = "block";
 
       const mode = document.querySelector('input[name="bonusMode"]:checked').value;
-      if (mode === "auto" || result.includes("Correct")) {
+      if (mode === "auto" || (result.includes("Correct") && mode === "tossup")) {
         document.getElementById("showBonusBtn").style.display = "inline";
       }
     }
 
     function showBonus() {
-      const mode = document.querySelector('input[name=\"bonusMode\"]:checked').value;
-      if (mode === \"never\") return;
-      document.getElementById(\"bonus\").textContent = \"Bonus: \" + questionData.bonus_question;
-      document.getElementById(\"bonus\").style.display = \"block\";
-      document.getElementById(\"bonusInputDiv\").style.display = \"block\";
+      if (document.querySelector('input[name=\"bonusMode\"]:checked').value === \"never\") return;
+      document.getElementById("bonus").textContent = \"Bonus: \" + questionData.bonus_question;
+      document.getElementById("bonus").style.display = "block";
+      document.getElementById("bonusInputDiv").style.display = "block";
       startBonusTimer();
-      document.getElementById(\"showBonusAnswerBtn\").style.display = \"inline\";
+      document.getElementById("showBonusAnswerBtn").style.display = "inline";
     }
 
     function startBonusTimer() {
       let time = 20;
-      const timerDiv = document.getElementById(\"bonusTimer\");
-      document.getElementById(\"bonusTimer\").style.display = \"block\";
+      document.getElementById("bonusTimer").style.display = "block";
+      const timerDiv = document.getElementById("bonusTimer");
       timerDiv.textContent = `⏳ Bonus Timer: ${time}`;
       const interval = setInterval(() => {
         time--;
@@ -286,17 +284,16 @@
     }
 
     function submitBonusAnswer() {
-      const userAnswer = document.getElementById(\"userBonusAnswer\").value.trim().toLowerCase();
-      const correctAnswer = questionData.bonus_answer.trim().toLowerCase();
-      const result = userAnswer && correctAnswer.includes(userAnswer) ? \"✅ Correct!\" : \"❌ Incorrect.\";
-      alert(`${result}\\nCorrect Bonus Answer: ${questionData.bonus_answer}`);
+      const userBonusAnswer = document.getElementById("userBonusAnswer").value.trim().toLowerCase();
+      const correctBonus = questionData.bonus_answer.trim().toLowerCase();
+      const result = correctBonus.includes(userBonusAnswer) ? "✅ Correct!" : "❌ Incorrect.";
+      alert(`${result} Bonus Answer: ${questionData.bonus_answer}`);
     }
 
     function showBonusAnswer() {
-      document.getElementById(\"bonusAnswer\").textContent = \"Bonus Answer: \" + questionData.bonus_answer;
-      document.getElementById(\"bonusAnswer\").style.display = \"block\";
+      document.getElementById("bonusAnswer").textContent = "Bonus Answer: " + questionData.bonus_answer;
+      document.getElementById("bonusAnswer").style.display = "block";
     }
   </script>
 </body>
 </html>
-
