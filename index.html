@@ -11,6 +11,25 @@
     #questionArea { min-height: 100px; margin-top: 10px; }
     #readerLine { margin-top: 10px; font-size: 1.1em; white-space: pre-wrap; }
     .loading { color: gray; font-style: italic; }
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100%;
+      background: transparent;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 16px;
+      width: 16px;
+      border-radius: 50%;
+      background: blue;
+      cursor: pointer;
+      margin-top: -6px;
+    }
+    input[type=range]::-webkit-slider-runnable-track {
+      height: 4px;
+      background: lightgray;
+    }
+    #speedLabel { font-weight: bold; margin-top: 5px; display: block; }
   </style>
 </head>
 <body>
@@ -40,10 +59,11 @@
   <label><input type="radio" name="bonusMode" value="auto" checked> Always</label>
   <label><input type="radio" name="bonusMode" value="tossup"> Only if Tossup Correct</label>
 
-  <h3>Reading speed:</h3>
-  <input type="range" id="speedSlider" min="0.1" max="1" step="0.1" value="0.5" />
+  <h3>Reading speed <span style="font-weight: normal; color: gray">(Recommended: 5–8)</span></h3>
+  <input type="range" id="speedSlider" min="1" max="10" step="1" value="7" />
+  <span id="speedLabel">Speed: 7</span>
 
-  <br><br>
+  <br>
   <button onclick="loadQuestion()">Load Question</button>
   <button id="pauseBtn" onclick="togglePause()" style="display:none">Pause</button>
 
@@ -76,6 +96,16 @@
     document.getElementById("selectAllCats").addEventListener("change", function() {
       const checkboxes = document.querySelectorAll("#categoryList input[type='checkbox']");
       checkboxes.forEach(cb => cb.checked = this.checked);
+    });
+
+    const slider = document.getElementById("speedSlider");
+    const speedLabel = document.getElementById("speedLabel");
+    slider.addEventListener("input", () => {
+      speedLabel.textContent = `Speed: ${slider.value}`;
+      if (readingInterval) {
+        clearInterval(readingInterval);
+        startWordReading();
+      }
     });
 
     function getCheckedValues(containerId) {
@@ -148,15 +178,8 @@
           clearInterval(readingInterval);
           startBuzzerTimer();
         }
-      }, parseFloat(document.getElementById("speedSlider").value) * 1000);
+      }, 1100 - (parseInt(slider.value) * 100));
     }
-
-    document.getElementById("speedSlider").addEventListener("input", () => {
-      if (readingInterval) {
-        clearInterval(readingInterval);
-        startWordReading();
-      }
-    });
 
     function togglePause() {
       paused = !paused;
