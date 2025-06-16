@@ -9,6 +9,7 @@
     .line { margin: 10px 0; }
     button { margin-top: 10px; }
     #answer, #bonus, #bonusAnswer { display: none; margin-top: 15px; font-weight: bold; }
+    #speedLabel { margin-left: 10px; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -33,7 +34,11 @@
     <label><input type="checkbox" value="high_school" /> High School</label><br>
   </div>
 
-  <br>
+  <h3>Reading speed:</h3>
+  <input type="range" id="speedSlider" min="1" max="5" value="2" />
+  <span id="speedLabel">2s per line</span>
+
+  <br><br>
   <button onclick="loadQuestion()">Load Question</button>
 
   <div id="questionArea"></div>
@@ -49,6 +54,13 @@
     let lineIndex = 0;
     let questionData = null;
     let readingInterval = null;
+
+    const slider = document.getElementById("speedSlider");
+    const speedLabel = document.getElementById("speedLabel");
+
+    slider.addEventListener("input", () => {
+      speedLabel.textContent = slider.value + "s per line";
+    });
 
     function getCheckedValues(containerId) {
       return Array.from(document.querySelectorAll(`#${containerId} input:checked`)).map(cb => cb.value);
@@ -100,6 +112,8 @@
     function startAutoReading() {
       if (readingInterval) clearInterval(readingInterval);
 
+      const delay = Number(slider.value) * 1000;
+
       readingInterval = setInterval(() => {
         if (lineIndex < currentLines.length) {
           const line = document.createElement("div");
@@ -112,7 +126,7 @@
           clearInterval(readingInterval);
           document.getElementById("showAnswerBtn").style.display = "inline";
         }
-      }, 2000); // Default reading speed: 2 seconds per line
+      }, delay);
     }
 
     function showAnswer() {
@@ -134,3 +148,4 @@
   </script>
 </body>
 </html>
+
