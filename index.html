@@ -14,31 +14,26 @@
 <body>
   <h1>🔬 SciBowl QBReader</h1>
 
-  <label for="category">Choose a category:</label>
-  <select id="category">
-    <option value="">Any</option>
-    <option value="PHYSICS">PHYSICS</option>
-    <option value="CHEMISTRY">CHEMISTRY</option>
-    <option value="BIOLOGY">BIOLOGY</option>
-    <option value="EARTH AND SPACE">EARTH AND SPACE</option>
-    <option value="ENERGY">ENERGY</option>
-    <option value="MATH">MATH</option>
-    <option value="GENERAL SCIENCE">GENERAL SCIENCE</option>
-    <option value="ASTRONOMY">ASTRONOMY</option>
-    <option value="COMPUTER SCIENCE">COMPUTER SCIENCE</option>
-  </select>
+  <h3>Choose categories:</h3>
+  <div id="categoryList">
+    <label><input type="checkbox" value="PHYSICS" /> Physics</label><br>
+    <label><input type="checkbox" value="CHEMISTRY" /> Chemistry</label><br>
+    <label><input type="checkbox" value="BIOLOGY" /> Biology</label><br>
+    <label><input type="checkbox" value="EARTH AND SPACE" /> Earth and Space</label><br>
+    <label><input type="checkbox" value="ENERGY" /> Energy</label><br>
+    <label><input type="checkbox" value="MATH" /> Math</label><br>
+    <label><input type="checkbox" value="GENERAL SCIENCE" /> General Science</label><br>
+    <label><input type="checkbox" value="ASTRONOMY" /> Astronomy</label><br>
+    <label><input type="checkbox" value="COMPUTER SCIENCE" /> Computer Science</label><br>
+  </div>
 
-  <br><br>
+  <h3>Choose difficulty:</h3>
+  <div id="difficultyList">
+    <label><input type="checkbox" value="middle_school" /> Middle School</label><br>
+    <label><input type="checkbox" value="high_school" /> High School</label><br>
+  </div>
 
-  <label for="difficulty">Choose difficulty:</label>
-  <select id="difficulty">
-    <option value="">Any</option>
-    <option value="middle_school">Middle School</option>
-    <option value="high_school">High School</option>
-  </select>
-
-  <br><br>
-
+  <br>
   <button onclick="loadQuestion()">Load Question</button>
 
   <div id="questionArea"></div>
@@ -55,16 +50,19 @@
     let questionData = null;
     let readingInterval = null;
 
+    function getCheckedValues(containerId) {
+      return Array.from(document.querySelectorAll(`#${containerId} input:checked`)).map(cb => cb.value);
+    }
+
     async function loadQuestion() {
-      const category = document.getElementById("category").value.trim();
-      const difficulty = document.getElementById("difficulty").value;
+      const categories = getCheckedValues("categoryList");
+      const difficulties = getCheckedValues("difficultyList");
 
       let payload = null;
-
-      if (category || difficulty) {
+      if (categories.length || difficulties.length) {
         payload = {};
-        if (category) payload.categories = [category.toUpperCase()];
-        if (difficulty) payload.difficulties = [difficulty];
+        if (categories.length) payload.categories = categories;
+        if (difficulties.length) payload.difficulties = difficulties;
       }
 
       try {
@@ -76,7 +74,7 @@
 
         const data = await res.json();
         if (!data.questions || data.questions.length === 0) {
-          document.getElementById("questionArea").innerHTML = `<p style="color:red;">❌ No questions found. Try a different category or difficulty.</p>`;
+          document.getElementById("questionArea").innerHTML = `<p style="color:red;">❌ No questions found. Try different filters.</p>`;
           return;
         }
 
@@ -84,7 +82,7 @@
         currentLines = questionData.tossup_question.split(/(?<=[.?!])\s+/);
         lineIndex = 0;
 
-        document.getElementById("questionArea").innerHTML = `<h3>${questionData.category} — ${difficulty || "Any Level"}</h3>`;
+        document.getElementById("questionArea").innerHTML = `<h3>${questionData.category}</h3>`;
         document.getElementById("answer").style.display = "none";
         document.getElementById("bonus").style.display = "none";
         document.getElementById("bonusAnswer").style.display = "none";
@@ -114,7 +112,7 @@
           clearInterval(readingInterval);
           document.getElementById("showAnswerBtn").style.display = "inline";
         }
-      }, 2000); // ⏱ Adjust delay per line here
+      }, 2000); // Default reading speed: 2 seconds per line
     }
 
     function showAnswer() {
@@ -136,6 +134,3 @@
   </script>
 </body>
 </html>
-
-
-
