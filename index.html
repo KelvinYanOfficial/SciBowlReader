@@ -15,6 +15,7 @@
       display: flex;
       height: 100vh;
     }
+
     .sidebar {
       width: 250px;
       background: #f2f2f2;
@@ -22,21 +23,25 @@
       overflow-y: auto;
       border-right: 1px solid #ccc;
     }
+
     .main {
       flex: 1;
       padding: 20px;
       overflow-y: auto;
     }
+
     #readerLine {
       font-size: 1.1em;
       margin-top: 15px;
       min-height: 60px;
       white-space: pre-wrap;
     }
+
     #loading, #buzzerTimer, #answer, #bonusAnswer {
       margin-top: 15px;
       font-weight: bold;
     }
+
     button {
       margin: 5px 0;
       padding: 8px 14px;
@@ -47,21 +52,26 @@
       cursor: pointer;
       font-size: 15px;
     }
+
     button:hover {
       background: #005fa3;
     }
+
     .hidden {
       display: none;
     }
+
     input[type="text"] {
       width: 100%;
       padding: 6px;
       margin-top: 5px;
     }
+
     .section-title {
       margin-top: 20px;
       font-weight: bold;
     }
+
     #speedLabel {
       margin-top: 5px;
       font-size: 14px;
@@ -208,11 +218,8 @@
         });
         const data = await res.json();
         questionData = data.questions[0];
-
-        // ✅ Use API's question_type and bonus_type if available
-        questionData.question_type = questionData.question_type || getQuestionType(questionData.tossup_question);
-        questionData.bonus_type = questionData.bonus_type || getQuestionType(questionData.bonus_question);
-
+        questionData.question_type = getQuestionType(questionData.tossup_question);
+        questionData.bonus_type = getQuestionType(questionData.bonus_question);
         document.getElementById("questionType").textContent = `Type: ${questionData.question_type} – ${questionData.category}`;
         document.getElementById("loading").classList.add("hidden");
         startReading(questionData.tossup_question, false);
@@ -229,7 +236,8 @@
       isBonus = bonus;
       const reader = document.getElementById("readerLine");
       const speed = 1100 - parseInt(speedSlider.value) * 100;
-      reader.innerHTML = bonus ? "<b>Bonus:</b> " : "";
+      const typeText = bonus ? questionData.bonus_type : questionData.question_type;
+      reader.innerHTML = `<b>${bonus ? "Bonus" : "Tossup"} (${typeText}):</b> `;
 
       document.getElementById("buzzBtn").classList.remove("hidden");
 
