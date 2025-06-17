@@ -313,12 +313,16 @@
       const correct = questionData.tossup_answer;
       const isMC = questionData.question_type === "Multiple Choice";
 
-      const result = await gradeAnswer(user, correct, isMC);
+      // Grade silently (still used for bonus logic) but do NOT display correctness
+      let result = "incorrect";
+      try {
+        result = await gradeAnswer(user, correct, isMC);
+      } catch (_) {}
 
       if (countdownId) clearInterval(countdownId);
       countdownId = null;
 
-      document.getElementById("answer").innerHTML = `${result === "correct" ? "✅ Correct!" : "❌ Incorrect."}<br><b>Answer:</b> ${correct}`;
+      document.getElementById("answer").innerHTML = `<b>Answer:</b> ${correct}`;
       document.getElementById("answer").classList.remove("hidden");
       document.getElementById("answerInputDiv").classList.add("hidden");
       timerLocked = true;
@@ -330,12 +334,15 @@
       const correct = questionData.bonus_answer;
       const isMC = questionData.bonus_type === "Multiple Choice";
 
-      const result = await gradeAnswer(user, correct, isMC);
+      // Grade silently
+      try {
+        await gradeAnswer(user, correct, isMC);
+      } catch (_) {}
 
       if (countdownId) clearInterval(countdownId);
       countdownId = null;
 
-      document.getElementById("bonusAnswer").innerHTML = `${result === "correct" ? "✅ Correct!" : "❌ Incorrect."}<br><b>Answer:</b> ${correct}`;
+      document.getElementById("bonusAnswer").innerHTML = `<b>Answer:</b> ${correct}`;
       document.getElementById("bonusAnswer").classList.remove("hidden");
       document.getElementById("bonusInputDiv").classList.add("hidden");
       bonusTimerLocked = true;
@@ -348,7 +355,7 @@
         body: JSON.stringify({ userAnswer, correctAnswer, isMultipleChoice: isMC })
       });
       const data = await res.json();
-      return data.result;
+      return data.result; // "correct" or "incorrect"
     }
 
     function showAnswer(bonus = false) {
