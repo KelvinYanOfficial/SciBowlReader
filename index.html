@@ -177,21 +177,19 @@
     }
 
     function startReading() {
-      const speed = 1100 - parseInt(document.getElementById("speedSlider").value) * 100;
-      interval = setInterval(() => {
-        if (wordIndex < currentWords.length) {
-          reader.innerHTML += currentWords[wordIndex++] + " ";
-          MathJax.typesetPromise([reader]);
-        } else {
-          clearInterval(interval);
-          readingDone = true;
-          if (!buzzed) startTimer(5, "Buzz Timer", () => {
-            document.getElementById("buzzBtn").style.display = "none";
-            showAnswer();
-          });
-        }
-      }, speed);
-    }
+interval = setInterval(() => {
+  if (wordIndex < currentWords.length) {
+    reader.innerHTML += currentWords[wordIndex++] + " ";
+  } else {
+    clearInterval(interval);
+    readingDone = true;
+    MathJax.typesetPromise([reader]);
+    if (!buzzed) startTimer(5, "Buzz Timer", () => {
+      document.getElementById("buzzBtn").style.display = "none";
+      showAnswer();
+    });
+  }
+}, speed);
 
     function buzz() {
       if (!readingDone && !buzzed) clearInterval(interval);
