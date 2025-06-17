@@ -114,7 +114,7 @@
     <h1>🔬 SciBowl QBReader</h1>
     <button onclick="loadQuestion()">Load Question</button>
     <button id="pauseBtn" onclick="togglePause()" class="hidden">Pause</button>
-    <button id="buzzBtn" onclick="buzz()" class="hidden">Buzz!</button>
+    <button id="buzzBtn" onclick="buzz()" class="hidden" disabled>Buzz!</button>
     <button id="showBonusBtn" onclick="startBonus()" class="hidden">Show Bonus</button>
 
     <div id="questionType" style="margin-top:10px; font-weight:bold;"></div>
@@ -180,6 +180,7 @@
       document.getElementById("bonusInputDiv").classList.add("hidden");
       document.getElementById("answerInputDiv").classList.add("hidden");
       document.getElementById("buzzBtn").classList.remove("hidden");
+      document.getElementById("buzzBtn").disabled = true;
       document.getElementById("buzzerTimer").textContent = "";
       document.getElementById("showBonusBtn").classList.add("hidden");
       document.getElementById("questionType").textContent = "";
@@ -228,11 +229,12 @@
       const speed = 1100 - parseInt(document.getElementById("speedSlider").value) * 100;
       reader.innerHTML = "";
 
-      document.getElementById("buzzBtn").disabled = false;
-
       interval = setInterval(() => {
         if (!paused && wordIndex < words.length) {
           reader.innerHTML += words[wordIndex++] + " ";
+          if (wordIndex === 1) {
+            document.getElementById("buzzBtn").disabled = false;
+          }
         }
         if (wordIndex >= words.length) {
           clearInterval(interval);
@@ -360,6 +362,7 @@
       isBonus = true;
 
       document.getElementById("buzzBtn").classList.remove("hidden");
+      document.getElementById("buzzBtn").disabled = true;
       document.getElementById("questionType").textContent = `Type: ${questionData.bonus_type}`;
       startReading(questionData.bonus_question, true);
     }
