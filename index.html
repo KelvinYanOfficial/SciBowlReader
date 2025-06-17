@@ -312,6 +312,12 @@
         await gradeAnswer(user, correct, isMC);
       } catch (_) {}
 
+      // Reveal rest of tossup
+      const full = questionData.tossup_question;
+      const remaining = full.split(/\s+/).slice(wordIndex).join(" ");
+      document.getElementById("readerLine").innerHTML += remaining + " ";
+      await MathJax.typesetPromise([document.getElementById("readerLine")]);
+
       if (countdownId) clearInterval(countdownId);
       countdownId = null;
 
@@ -330,6 +336,12 @@
       try {
         await gradeAnswer(user, correct, isMC);
       } catch (_) {}
+
+      // Reveal rest of bonus
+      const full = questionData.bonus_question;
+      const remaining = full.split(/\s+/).slice(wordIndex).join(" ");
+      document.getElementById("readerLine").innerHTML += remaining + " ";
+      await MathJax.typesetPromise([document.getElementById("readerLine")]);
 
       if (countdownId) clearInterval(countdownId);
       countdownId = null;
@@ -385,4 +397,5 @@
   </script>
 </body>
 </html>
+
 
