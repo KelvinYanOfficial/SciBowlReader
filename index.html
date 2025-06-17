@@ -131,7 +131,7 @@
     let wordIndex = 0, interval = null, paused = false;
     let readingDone = false, buzzed = false, timerLocked = false;
     let questionData = null;
-    let countdownRef = null; // ✅ new global countdown ref
+    let countdownRef = null;
 
     const slider = document.getElementById("speedSlider");
     const speedLabel = document.getElementById("speedLabel");
@@ -159,13 +159,14 @@
       clearInterval(interval);
       clearInterval(countdownRef);
       document.getElementById("buzzerTimer").textContent = "";
+      document.getElementById("buzzerTimer").classList.add("hidden");
 
       wordIndex = 0;
       buzzed = false;
       readingDone = false;
       timerLocked = false;
 
-      ["readerLine", "buzzerTimer", "answer", "bonusAnswer"].forEach(id => document.getElementById(id).innerHTML = "");
+      ["readerLine", "answer", "bonusAnswer"].forEach(id => document.getElementById(id).innerHTML = "");
       ["answer", "answerInputDiv", "bonusInputDiv", "bonusAnswer", "showBonusBtn", "questionType"].forEach(id => document.getElementById(id).classList.add("hidden"));
       document.getElementById("loading").classList.remove("hidden");
 
@@ -238,6 +239,7 @@
       clearInterval(interval);
       clearInterval(countdownRef);
       document.getElementById("buzzerTimer").textContent = "";
+      document.getElementById("buzzerTimer").classList.add("hidden");
       document.getElementById("buzzBtn").classList.add("hidden");
       document.getElementById("answerInputDiv").classList.remove("hidden");
       startTimer(10, "Answer Timer", () => {
@@ -251,14 +253,16 @@
 
     function startTimer(seconds, label, callback) {
       const timerDiv = document.getElementById("buzzerTimer");
-      clearInterval(countdownRef);
+      timerDiv.classList.remove("hidden");
       timerDiv.textContent = `⏱ ${label}: ${seconds}`;
+      clearInterval(countdownRef);
       countdownRef = setInterval(() => {
         seconds--;
         timerDiv.textContent = `⏱ ${label}: ${seconds}`;
         if (seconds <= 0) {
           clearInterval(countdownRef);
           timerDiv.textContent = "";
+          timerDiv.classList.add("hidden");
           callback();
         }
       }, 1000);
@@ -266,6 +270,10 @@
 
     function submitAnswer() {
       if (timerLocked) return;
+      clearInterval(countdownRef);
+      document.getElementById("buzzerTimer").textContent = "";
+      document.getElementById("buzzerTimer").classList.add("hidden");
+
       const user = document.getElementById("userAnswer").value.trim().toLowerCase();
       const correct = questionData.tossup_answer.trim().toLowerCase();
       const isCorrect = user && correct.includes(user);
@@ -287,15 +295,18 @@
     function startBonus() {
       clearInterval(interval);
       clearInterval(countdownRef);
+      wordIndex = 0;
+      buzzed = false;
+      timerLocked = false;
+      readingDone = false;
+
       document.getElementById("readerLine").textContent = "";
       document.getElementById("buzzerTimer").textContent = "";
+      document.getElementById("buzzerTimer").classList.add("hidden");
       document.getElementById("answer").classList.add("hidden");
       document.getElementById("answerInputDiv").classList.add("hidden");
       document.getElementById("showBonusBtn").classList.add("hidden");
-      buzzed = false;
-      timerLocked = false;
-      wordIndex = 0;
-      readingDone = false;
+
       startReadingBonus(questionData.bonus_question);
     }
 
