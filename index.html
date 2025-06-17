@@ -280,7 +280,7 @@
       document.getElementById("showBonusBtn").classList.add("hidden");
       document.getElementById("answer").classList.add("hidden");
       document.getElementById("answerInputDiv").classList.add("hidden");
-      document.getElementById("buzzerTimer").textContent = "";
+      document.getElementById("buzzerTimer").textContent = ""; // ✅ clear tossup timer
       startReadingBonus(questionData.bonus_question);
     }
 
