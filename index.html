@@ -171,14 +171,6 @@
       return [...document.querySelectorAll(`#${id} input:checked`)].map(el => el.value);
     }
 
-    function getQuestionType(text) {
-      const lower = text.trim().toLowerCase();
-      if (lower.startsWith("multiple choice") || lower.match(/^\([a-d]\)/)) {
-        return "Multiple Choice";
-      }
-      return "Short Answer";
-    }
-
     async function loadQuestion() {
       if (countdownId) clearInterval(countdownId);
       countdownId = null;
@@ -218,8 +210,8 @@
         });
         const data = await res.json();
         questionData = data.questions[0];
-        questionData.question_type = getQuestionType(questionData.tossup_question);
-        questionData.bonus_type = getQuestionType(questionData.bonus_question);
+        questionData.question_type = questionData.tossup_question_type;
+        questionData.bonus_type = questionData.bonus_question_type;
         document.getElementById("questionType").textContent = `Type: ${questionData.question_type} – ${questionData.category}`;
         document.getElementById("loading").classList.add("hidden");
         startReading(questionData.tossup_question, false);
