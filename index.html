@@ -2,289 +2,240 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>SciBowl QBReader</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SciBowl QBReader</title>
   <style>
     body {
-      margin: 0;
       font-family: Arial, sans-serif;
+      margin: 0;
       display: flex;
       height: 100vh;
-      background-color: #f0f2f5;
     }
     .sidebar {
-      width: 250px;
-      background-color: #ffffff;
+      width: 240px;
       padding: 20px;
-      border-right: 1px solid #ccc;
+      background-color: #f4f4f4;
       overflow-y: auto;
+      border-right: 1px solid #ccc;
     }
     .main {
-      flex-grow: 1;
+      flex: 1;
       padding: 20px;
-      display: flex;
-      flex-direction: column;
     }
     h1 {
       margin-top: 0;
     }
-    button {
-      background-color: #007bff;
-      color: white;
-      border: none;
-      padding: 10px 16px;
-      border-radius: 4px;
-      margin-top: 10px;
-      cursor: pointer;
-      font-size: 16px;
-    }
-    button:hover {
-      background-color: #0056b3;
-    }
     .section {
       margin-bottom: 20px;
     }
-    #questionArea {
-      margin-top: 20px;
-      font-size: 1.2em;
-      white-space: pre-wrap;
-      background-color: #fff;
-      padding: 16px;
-      border-radius: 6px;
-      box-shadow: 0 0 5px rgba(0,0,0,0.1);
-      min-height: 100px;
-    }
-    #readerLine {
-      margin-top: 10px;
-    }
-    #loading {
-      color: gray;
-      font-style: italic;
-      display: none;
-    }
-    #buzzerTimer, #bonusTimer, #answer, #bonus, #bonusAnswer, #answerInputDiv, #bonusInputDiv {
-      margin-top: 15px;
-      font-weight: bold;
-    }
-    input[type=range] {
-      width: 100%;
-      height: 6px;
-      background: lightgray;
-      border-radius: 5px;
-      outline: none;
-    }
-    input[type=range]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      appearance: none;
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      background: blue;
+    button {
+      margin: 5px 0;
+      padding: 10px 20px;
+      font-size: 1rem;
+      background-color: #2a7ae2;
+      color: white;
+      border: none;
+      border-radius: 4px;
       cursor: pointer;
     }
-    .collapsible {
-      background-color: #eee;
-      border: none;
-      padding: 10px;
-      text-align: left;
-      outline: none;
-      font-size: 16px;
-      width: 100%;
-      margin-bottom: 5px;
+    button:hover {
+      background-color: #1e5ec1;
     }
-    .content {
-      padding-left: 10px;
+    input[type="range"] {
+      width: 100%;
+    }
+    .question-block {
+      font-size: 1.1em;
+      margin-top: 10px;
+    }
+    .highlight {
+      font-weight: bold;
+      margin-top: 10px;
+    }
+    .timer {
+      font-weight: bold;
+      margin-top: 10px;
+    }
+    #readerLine {
+      white-space: pre-wrap;
+      min-height: 80px;
+    }
+    .hidden {
       display: none;
     }
   </style>
-
-  <!-- MathJax for pretty math rendering -->
-  <script>
-    window.MathJax = {
-      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
-      svg: { fontCache: 'global' }
-    };
+  <!-- MathJax for LaTeX rendering -->
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
 </head>
-
 <body>
   <div class="sidebar">
-    <h2>Filters</h2>
+    <h2>Settings</h2>
 
-    <button class="collapsible">Categories</button>
-    <div class="content" id="categoryList">
-      <label><input type="checkbox" value="PHYSICS"> Physics</label><br>
-      <label><input type="checkbox" value="CHEMISTRY"> Chemistry</label><br>
-      <label><input type="checkbox" value="BIOLOGY"> Biology</label><br>
-      <label><input type="checkbox" value="EARTH AND SPACE"> Earth and Space</label><br>
-      <label><input type="checkbox" value="ENERGY"> Energy</label><br>
-      <label><input type="checkbox" value="MATH"> Math</label><br>
-      <label><input type="checkbox" value="GENERAL SCIENCE"> General Science</label><br>
-      <label><input type="checkbox" value="ASTRONOMY"> Astronomy</label><br>
-      <label><input type="checkbox" value="COMPUTER SCIENCE"> Computer Science</label><br>
-    </div>
-
-    <button class="collapsible">Difficulties</button>
-    <div class="content" id="difficultyList">
-      <label><input type="checkbox" value="middle_school"> Middle School</label><br>
-      <label><input type="checkbox" value="high_school"> High School</label><br>
+    <div class="section">
+      <strong>Categories</strong><br/>
+      <button onclick="toggleList('categoriesList')">Choose Categories</button>
+      <div id="categoriesList" class="hidden">
+        <label><input type="checkbox" value="PHYSICS"> Physics</label><br/>
+        <label><input type="checkbox" value="CHEMISTRY"> Chemistry</label><br/>
+        <label><input type="checkbox" value="BIOLOGY"> Biology</label><br/>
+        <label><input type="checkbox" value="EARTH AND SPACE"> Earth and Space</label><br/>
+        <label><input type="checkbox" value="ENERGY"> Energy</label><br/>
+        <label><input type="checkbox" value="MATH"> Math</label><br/>
+        <label><input type="checkbox" value="GENERAL SCIENCE"> General Science</label><br/>
+        <label><input type="checkbox" value="ASTRONOMY"> Astronomy</label><br/>
+        <label><input type="checkbox" value="COMPUTER SCIENCE"> Computer Science</label>
+      </div>
     </div>
 
     <div class="section">
-      <h4>Bonus Settings</h4>
-      <label><input type="radio" name="bonusMode" value="auto" checked> Always</label><br>
-      <label><input type="radio" name="bonusMode" value="tossup"> If Tossup Correct</label><br>
-      <label><input type="radio" name="bonusMode" value="never"> Never</label>
+      <strong>Difficulty</strong><br/>
+      <button onclick="toggleList('difficultyList')">Choose Difficulty</button>
+      <div id="difficultyList" class="hidden">
+        <label><input type="checkbox" value="middle_school"> Middle School</label><br/>
+        <label><input type="checkbox" value="high_school"> High School</label>
+      </div>
     </div>
 
     <div class="section">
-      <h4>Reading Speed</h4>
-      <input type="range" id="speedSlider" min="1" max="10" value="7">
-      <div>Speed: <span id="speedLabel">7</span> (Recommended: 5–8)</div>
+      <strong>Reading Speed</strong><br/>
+      <input type="range" id="speedSlider" min="1" max="10" step="1" value="7" />
+      <div id="speedLabel">Speed: 7 (Recommended: 5–8)</div>
     </div>
 
-    <button onclick="loadQuestion()">Load Question</button>
-    <button id="pauseBtn" onclick="togglePause()" style="display:none;">Pause</button>
+    <div class="section">
+      <button onclick="loadQuestion()">Load Question</button>
+      <button onclick="togglePause()" id="pauseBtn">Pause</button>
+    </div>
   </div>
 
   <div class="main">
-    <h1>🔬 SciBowl QBReader</h1>
-    <div id="loading">Loading...</div>
-    <div id="questionArea">
-      <div id="readerLine"></div>
-    </div>
+    <h1>SciBowl QBReader</h1>
+    <div class="question-block" id="readerLine"></div>
+    <div class="timer" id="buzzerTimer"></div>
 
-    <div id="buzzerTimer"></div>
-    <button id="buzzBtn" style="display:none;" onclick="buzzed()">Buzz!</button>
-    <div id="answerInputDiv">
-      <input type="text" id="userAnswer" placeholder="Your answer..." />
+    <button id="buzzBtn" onclick="buzz()">Buzz</button>
+    <div class="hidden" id="answerInputDiv">
+      <input type="text" id="userAnswer" placeholder="Your answer...">
       <button onclick="submitAnswer()">Submit Answer</button>
     </div>
-    <div id="answer"></div>
-
-    <button id="showBonusBtn" style="display:none;" onclick="showBonus()">Show Bonus</button>
-    <div id="bonus"></div>
-    <div id="bonusTimer"></div>
-    <div id="bonusInputDiv">
-      <input type="text" id="bonusInput" placeholder="Bonus answer..." />
-      <button onclick="submitBonusAnswer()">Submit Bonus</button>
-    </div>
-    <div id="bonusAnswer"></div>
+    <div class="highlight" id="answerReveal"></div>
   </div>
 
   <script>
-    let currentWords = [], wordIndex = 0, readingInterval = null;
-    let paused = false, buzzedIn = false, readingStopped = false;
-    let questionData = null;
+    let words = [], index = 0, interval, paused = false, buzzed = false;
+    const speedSlider = document.getElementById('speedSlider');
+    const speedLabel = document.getElementById('speedLabel');
 
-    document.querySelectorAll('.collapsible').forEach(btn => {
-      btn.addEventListener("click", function () {
-        this.classList.toggle("active");
-        const content = this.nextElementSibling;
-        content.style.display = content.style.display === "block" ? "none" : "block";
-      });
-    });
+    speedSlider.oninput = () => {
+      speedLabel.textContent = `Speed: ${speedSlider.value} (Recommended: 5–8)`;
+    };
 
-    const speedSlider = document.getElementById("speedSlider");
-    speedSlider.addEventListener("input", () => {
-      document.getElementById("speedLabel").textContent = speedSlider.value;
-    });
-
-    function getCheckedValues(id) {
-      return Array.from(document.querySelectorAll(`#${id} input:checked`)).map(cb => cb.value);
+    function toggleList(id) {
+      const el = document.getElementById(id);
+      el.classList.toggle('hidden');
     }
 
-    async function loadQuestion() {
-      clearInterval(readingInterval);
-      wordIndex = 0;
-      currentWords = [];
-      buzzedIn = false;
-      readingStopped = false;
-      document.getElementById("readerLine").textContent = "";
-      document.getElementById("loading").style.display = "block";
-      document.getElementById("answer").style.display = "none";
-      document.getElementById("bonus").style.display = "none";
-      document.getElementById("bonusAnswer").style.display = "none";
-      document.getElementById("buzzBtn").style.display = "inline";
-      document.getElementById("answerInputDiv").style.display = "none";
-      document.getElementById("showBonusBtn").style.display = "none";
-      document.getElementById("bonusInputDiv").style.display = "none";
-      document.getElementById("bonusTimer").style.display = "none";
+    function getCheckedValues(containerId) {
+      return Array.from(document.querySelectorAll(`#${containerId} input:checked`)).map(el => el.value);
+    }
 
-      const categories = getCheckedValues("categoryList");
-      const difficulties = getCheckedValues("difficultyList");
-      const payload = { categories, difficulties };
+    function loadQuestion() {
+      clearInterval(interval);
+      index = 0;
+      paused = false;
+      buzzed = false;
+      document.getElementById('readerLine').textContent = "Loading...";
+      document.getElementById('answerInputDiv').classList.add('hidden');
+      document.getElementById('buzzBtn').style.display = 'inline-block';
+      document.getElementById('answerReveal').innerHTML = '';
+      document.getElementById('buzzerTimer').textContent = '';
 
-      try {
-        const res = await fetch("https://sci-bowl-proxy.onrender.com/api/random", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
+      const cats = getCheckedValues('categoriesList');
+      const diffs = getCheckedValues('difficultyList');
+
+      const payload = {};
+      if (cats.length) payload.categories = cats;
+      if (diffs.length) payload.difficulties = diffs;
+
+      fetch('https://sci-bowl-proxy.onrender.com/api/random', {
+        method: Object.keys(payload).length ? 'POST' : 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        body: Object.keys(payload).length ? JSON.stringify(payload) : null
+      })
+        .then(res => res.json())
+        .then(data => {
+          const q = data.questions[0].tossup_question;
+          const formatted = q.replace(/\^(\d+)/g, '^{$1}').replace(/sqrt\((.*?)\)/g, '\\sqrt{$1}');
+          const tex = `\\(${formatted}\\)`;
+          words = tex.split(" ");
+          document.getElementById('readerLine').textContent = '';
+          renderWords();
         });
-        const data = await res.json();
-        questionData = data.questions[0];
-        currentWords = questionData.tossup_question.split(/\s+/);
-        document.getElementById("loading").style.display = "none";
-        startWordReading();
-      } catch (err) {
-        document.getElementById("readerLine").textContent = "❌ Failed to load question.";
-      }
     }
 
-    function startWordReading() {
-      clearInterval(readingInterval);
-      const interval = 1100 - parseInt(speedSlider.value) * 100;
-      readingInterval = setInterval(() => {
-        if (!paused && !readingStopped && wordIndex < currentWords.length) {
-          document.getElementById("readerLine").textContent += currentWords[wordIndex++] + " ";
+    function renderWords() {
+      const delay = 1100 - speedSlider.value * 100;
+      interval = setInterval(() => {
+        if (!paused && index < words.length && !buzzed) {
+          document.getElementById('readerLine').textContent += words[index++] + ' ';
+          MathJax.typesetPromise();
         }
-        if (wordIndex >= currentWords.length) {
-          clearInterval(readingInterval);
+        if (index >= words.length && !buzzed) {
+          clearInterval(interval);
+          startPostReadTimer();
         }
-        MathJax.typeset(); // re-render math
-      }, interval);
+      }, delay);
     }
 
     function togglePause() {
       paused = !paused;
-      document.getElementById("pauseBtn").textContent = paused ? "Resume" : "Pause";
+      document.getElementById('pauseBtn').textContent = paused ? "Resume" : "Pause";
     }
 
-    function buzzed() {
-      buzzedIn = true;
-      readingStopped = true;
-      clearInterval(readingInterval);
-      document.getElementById("buzzBtn").style.display = "none";
-      document.getElementById("answerInputDiv").style.display = "block";
+    function buzz() {
+      buzzed = true;
+      clearInterval(interval);
+      document.getElementById('buzzBtn').style.display = 'none';
+      document.getElementById('answerInputDiv').classList.remove('hidden');
+      document.getElementById('buzzerTimer').textContent = '⏱ You have 10 seconds to answer.';
+      let t = 10;
+      const timer = setInterval(() => {
+        t--;
+        document.getElementById('buzzerTimer').textContent = `⏱ You have ${t} seconds to answer.`;
+        if (t <= 0) {
+          clearInterval(timer);
+          document.getElementById('buzzerTimer').textContent = '';
+          document.getElementById('answerInputDiv').classList.add('hidden');
+        }
+      }, 1000);
     }
 
     function submitAnswer() {
-      const userAnswer = document.getElementById("userAnswer").value.trim().toLowerCase();
+      const answer = document.getElementById('userAnswer').value.trim().toLowerCase();
       const correct = questionData.tossup_answer.trim().toLowerCase();
-      const result = correct.includes(userAnswer) ? "✅ Correct!" : "❌ Incorrect.";
-      document.getElementById("answer").innerHTML = `${result}<br><strong>Correct Answer:</strong> ${questionData.tossup_answer}`;
-      document.getElementById("answer").style.display = "block";
-
-      if (result.includes("Correct")) {
-        const mode = document.querySelector('input[name="bonusMode"]:checked').value;
-        if (mode !== "never") {
-          document.getElementById("showBonusBtn").style.display = "inline";
-        }
+      if (answer && correct.includes(answer)) {
+        document.getElementById('answerReveal').innerHTML = `<span style="color: green">✅ Correct</span><br>Answer: ${correct}`;
+      } else {
+        document.getElementById('answerReveal').innerHTML = `<span style="color: red">❌ Incorrect</span><br>Answer: ${correct}`;
       }
     }
 
-    function showBonus() {
-      document.getElementById("bonus").textContent = "Bonus: " + questionData.bonus_question;
-      document.getElementById("bonus").style.display = "block";
-      document.getElementById("bonusInputDiv").style.display = "block";
-    }
-
-    function submitBonusAnswer() {
-      document.getElementById("bonusAnswer").textContent = "Bonus Answer: " + questionData.bonus_answer;
-      document.getElementById("bonusAnswer").style.display = "block";
+    function startPostReadTimer() {
+      document.getElementById('buzzerTimer').textContent = '⏱ Waiting for buzz...';
+      let t = 5;
+      const timer = setInterval(() => {
+        t--;
+        document.getElementById('buzzerTimer').textContent = `⏱ Time left to buzz: ${t}`;
+        if (t <= 0) {
+          clearInterval(timer);
+          document.getElementById('buzzerTimer').textContent = '';
+          document.getElementById('answerReveal').innerHTML = `<span style="color: gray">⏱ Time's up</span><br>Answer: sample answer`;
+        }
+      }, 1000);
     }
   </script>
 </body>
 </html>
-
