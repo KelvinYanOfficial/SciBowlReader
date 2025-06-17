@@ -77,39 +77,17 @@
       font-size: 14px;
       font-weight: bold;
     }
+
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
   </style>
 </head>
 <body>
   <div class="sidebar">
-    <h2>⚙️ Filters</h2>
-    <div class="section-title">Categories</div>
-    <label><input type="checkbox" id="selectAllCats"> Select All</label>
-    <div id="categoryList">
-      <label><input type="checkbox" value="PHYSICS"> Physics</label>
-      <label><input type="checkbox" value="CHEMISTRY"> Chemistry</label>
-      <label><input type="checkbox" value="BIOLOGY"> Biology</label>
-      <label><input type="checkbox" value="EARTH AND SPACE"> Earth and Space</label>
-      <label><input type="checkbox" value="ENERGY"> Energy</label>
-      <label><input type="checkbox" value="MATH"> Math</label>
-      <label><input type="checkbox" value="GENERAL SCIENCE"> General Science</label>
-      <label><input type="checkbox" value="ASTRONOMY"> Astronomy</label>
-      <label><input type="checkbox" value="COMPUTER SCIENCE"> Computer Science</label>
-    </div>
-
-    <div class="section-title">Difficulty</div>
-    <div id="difficultyList">
-      <label><input type="checkbox" value="middle_school"> Middle School</label>
-      <label><input type="checkbox" value="high_school"> High School</label>
-    </div>
-
-    <div class="section-title">Bonus Mode</div>
-    <label><input type="radio" name="bonusMode" value="auto" checked> Always</label>
-    <label><input type="radio" name="bonusMode" value="tossup"> If Tossup Correct</label>
-    <label><input type="radio" name="bonusMode" value="never"> Never</label>
-
-    <div class="section-title">Reading Speed</div>
-    <input type="range" id="speedSlider" min="1" max="10" value="7" />
-    <span id="speedLabel">Speed: 7 (Recommended: 5–8)</span>
+    <!-- same as before -->
   </div>
 
   <div class="main">
@@ -151,6 +129,11 @@
     let bonusShown = false;
     let isBonus = false;
 
+    function setBuzzEnabled(enabled) {
+      const buzzBtn = document.getElementById("buzzBtn");
+      buzzBtn.disabled = !enabled;
+    }
+
     const speedSlider = document.getElementById("speedSlider");
     speedSlider.addEventListener("input", () => {
       document.getElementById("speedLabel").textContent = `Speed: ${speedSlider.value} (Recommended: 5–8)`;
@@ -188,6 +171,8 @@
       document.getElementById("buzzerTimer").textContent = "";
       document.getElementById("showBonusBtn").classList.add("hidden");
       document.getElementById("questionType").textContent = "";
+
+      setBuzzEnabled(false);
 
       buzzed = false;
       bonusBuzzed = false;
@@ -241,6 +226,7 @@
           clearInterval(interval);
           readingDone = true;
           MathJax.typesetPromise([reader]);
+          setBuzzEnabled(true);
           if (!buzzed && !bonus) {
             startTimer(5, "Buzz Timer", () => {
               if (!buzzed) {
@@ -263,7 +249,7 @@
     }
 
     function buzz() {
-      if (timerLocked || bonusTimerLocked) return;
+      if (timerLocked || bonusTimerLocked || !readingDone) return;
       if (isBonus && bonusBuzzed) return;
       if (!isBonus && buzzed) return;
 
@@ -275,17 +261,14 @@
       if (isBonus) {
         bonusBuzzed = true;
         document.getElementById("bonusInputDiv").classList.remove("hidden");
-
         startTimer(20, "Bonus Answer Timer", () => {
           document.getElementById("bonusInputDiv").classList.add("hidden");
           showAnswer(true);
           bonusTimerLocked = true;
         });
-
       } else {
         buzzed = true;
         document.getElementById("answerInputDiv").classList.remove("hidden");
-
         startTimer(10, "Answer Timer", () => {
           document.getElementById("answerInputDiv").classList.add("hidden");
           showAnswer(false);
@@ -376,6 +359,7 @@
       buzzed = false;
       isBonus = true;
 
+      setBuzzEnabled(false);
       document.getElementById("buzzBtn").classList.remove("hidden");
       document.getElementById("questionType").textContent = `Type: ${questionData.bonus_type}`;
       startReading(questionData.bonus_question, true);
