@@ -251,16 +251,15 @@
           clearInterval(interval);
           readingDone = true;
           MathJax.typesetPromise([reader]);
-          if (!buzzed) {
-            startTimer(5, "Buzz Timer", () => {
-              if (!buzzed) {
-                buzzAllowed = false;
-                document.getElementById("buzzBtn").classList.add("hidden");
-                showAnswer();
-                timerLocked = true;
-              }
-            });
-          }
+          buzzAllowed = true;  // ✅ allow buzz during post-reading window
+          startTimer(5, "Buzz Timer", () => {
+            if (!buzzed) {
+              buzzAllowed = false; // ✅ disable buzz after timer
+              document.getElementById("buzzBtn").classList.add("hidden");
+              showAnswer();
+              timerLocked = true;
+            }
+          });
         }
       }, speed);
     }
@@ -301,7 +300,6 @@
         timerDiv.textContent = `⏱ ${label}: ${seconds}`;
         if (seconds <= 0) {
           clearInterval(countdownInterval);
-          buzzAllowed = false;
           callback();
         }
       }, 1000);
