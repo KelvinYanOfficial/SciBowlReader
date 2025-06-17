@@ -120,7 +120,7 @@
     <div id="questionType" style="margin-top:10px; font-weight:bold;"></div>
     <div id="loading" class="hidden">Loading question...</div>
     <div id="readerLine"></div>
-    <div id="buzzerTimer"></div>
+    <div id="buzzerTimer" class="hidden"></div>
 
     <div id="answer" class="hidden"></div>
     <div id="answerInputDiv" class="hidden">
@@ -173,6 +173,10 @@
 
     async function loadQuestion() {
       clearInterval(interval);
+      const timerDiv = document.getElementById("buzzerTimer");
+      timerDiv.textContent = "";
+      timerDiv.classList.add("hidden");
+
       document.getElementById("readerLine").innerHTML = "";
       document.getElementById("loading").classList.remove("hidden");
       document.getElementById("answer").classList.add("hidden");
@@ -181,7 +185,6 @@
       document.getElementById("answerInputDiv").classList.add("hidden");
       document.getElementById("buzzBtn").classList.remove("hidden");
       document.getElementById("buzzBtn").disabled = true;
-      document.getElementById("buzzerTimer").textContent = "";
       document.getElementById("showBonusBtn").classList.add("hidden");
       document.getElementById("questionType").textContent = "";
 
@@ -253,9 +256,19 @@
       }, speed);
     }
 
-    function togglePause() {
-      paused = !paused;
-      document.getElementById("pauseBtn").textContent = paused ? "Resume" : "Pause";
+    function startTimer(seconds, label, callback) {
+      const timerDiv = document.getElementById("buzzerTimer");
+      timerDiv.classList.remove("hidden");
+      timerDiv.textContent = `⏱ ${label}: ${seconds}`;
+      const countdown = setInterval(() => {
+        seconds--;
+        timerDiv.textContent = `⏱ ${label}: ${seconds}`;
+        if (seconds <= 0) {
+          clearInterval(countdown);
+          timerDiv.classList.add("hidden");
+          callback();
+        }
+      }, 1000);
     }
 
     function buzz() {
@@ -287,48 +300,33 @@
       }
     }
 
-    function startTimer(seconds, label, callback) {
-      const timerDiv = document.getElementById("buzzerTimer");
-      timerDiv.textContent = `⏱ ${label}: ${seconds}`;
-      const countdown = setInterval(() => {
-        seconds--;
-        timerDiv.textContent = `⏱ ${label}: ${seconds}`;
-        if (seconds <= 0) {
-          clearInterval(countdown);
-          callback();
-        }
-      }, 1000);
-    }
-
-    async function submitAnswer() {
+    function submitAnswer() {
       const user = document.getElementById("userAnswer").value.trim();
       const correct = questionData.tossup_answer;
-      const isMC = questionData.question_type === "Multiple Choice";
-      const res = await fetch("/api/grade", {
+      fetch("/api/grade", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userAnswer: user, correctAnswer: correct, isMultipleChoice: isMC })
+        body: JSON.stringify({ userAnswer: user, correctAnswer: correct, isMultipleChoice: questionData.question_type === "Multiple Choice" })
+      }).then(res => res.json()).then(data => {
+        document.getElementById("answer").innerHTML = `${data.result === "correct" ? "✅ Correct!" : "❌ Incorrect."}<br><b>Answer:</b> ${correct}`;
+        document.getElementById("answer").classList.remove("hidden");
+        document.getElementById("answerInputDiv").classList.add("hidden");
+        showBonusIfNeeded(data.result === "correct");
       });
-      const data = await res.json();
-      document.getElementById("answer").innerHTML = `${data.result === "correct" ? "✅ Correct!" : "❌ Incorrect."}<br><b>Answer:</b> ${correct}`;
-      document.getElementById("answer").classList.remove("hidden");
-      document.getElementById("answerInputDiv").classList.add("hidden");
-      showBonusIfNeeded(data.result === "correct");
     }
 
-    async function submitBonusAnswer() {
+    function submitBonusAnswer() {
       const user = document.getElementById("userBonusAnswer").value.trim();
       const correct = questionData.bonus_answer;
-      const isMC = questionData.bonus_type === "Multiple Choice";
-      const res = await fetch("/api/grade", {
+      fetch("/api/grade", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userAnswer: user, correctAnswer: correct, isMultipleChoice: isMC })
+        body: JSON.stringify({ userAnswer: user, correctAnswer: correct, isMultipleChoice: questionData.bonus_type === "Multiple Choice" })
+      }).then(res => res.json()).then(data => {
+        document.getElementById("bonusAnswer").innerHTML = `${data.result === "correct" ? "✅ Correct!" : "❌ Incorrect."}<br><b>Answer:</b> ${correct}`;
+        document.getElementById("bonusAnswer").classList.remove("hidden");
+        document.getElementById("bonusInputDiv").classList.add("hidden");
       });
-      const data = await res.json();
-      document.getElementById("bonusAnswer").innerHTML = `${data.result === "correct" ? "✅ Correct!" : "❌ Incorrect."}<br><b>Answer:</b> ${correct}`;
-      document.getElementById("bonusAnswer").classList.remove("hidden");
-      document.getElementById("bonusInputDiv").classList.add("hidden");
     }
 
     function showAnswer(bonus = false) {
@@ -352,6 +350,7 @@
       document.getElementById("answer").classList.add("hidden");
       document.getElementById("answerInputDiv").classList.add("hidden");
       document.getElementById("buzzerTimer").textContent = "";
+      document.getElementById("buzzerTimer").classList.add("hidden");
       document.getElementById("bonusAnswer").classList.add("hidden");
       document.getElementById("userBonusAnswer").value = "";
 
@@ -365,6 +364,11 @@
       document.getElementById("buzzBtn").disabled = true;
       document.getElementById("questionType").textContent = `Type: ${questionData.bonus_type}`;
       startReading(questionData.bonus_question, true);
+    }
+
+    function togglePause() {
+      paused = !paused;
+      document.getElementById("pauseBtn").textContent = paused ? "Resume" : "Pause";
     }
   </script>
 </body>
