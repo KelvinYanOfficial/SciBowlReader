@@ -2,257 +2,298 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>SciBowl QBReader</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-  <script type="text/javascript" id="MathJax-script" async
-    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <script id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+  </script>
   <style>
     body {
-      font-family: Arial, sans-serif;
       margin: 0;
-      padding: 0;
+      font-family: Arial, sans-serif;
       display: flex;
-      min-height: 100vh;
-      background: #f0f0f0;
+      height: 100vh;
     }
-    #sidebar {
+
+    .sidebar {
       width: 250px;
-      background: #003366;
-      color: white;
+      background: #f2f2f2;
       padding: 20px;
+      overflow-y: auto;
+      border-right: 1px solid #ccc;
     }
-    #sidebar h2 {
-      font-size: 18px;
-      margin-bottom: 10px;
-    }
-    #sidebar label {
-      display: block;
-      margin-bottom: 6px;
-    }
-    #main {
+
+    .main {
       flex: 1;
-      padding: 30px;
+      padding: 20px;
+      overflow-y: auto;
     }
+
+    h1 {
+      margin-top: 0;
+    }
+
+    #readerLine {
+      font-size: 1.1em;
+      margin-top: 15px;
+      min-height: 60px;
+      white-space: pre-wrap;
+    }
+
+    #loading, #buzzerTimer, #answer, #bonus, #bonusAnswer {
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 8px;
+      background: lightgray;
+      border-radius: 5px;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 16px;
+      width: 16px;
+      border-radius: 50%;
+      background: blue;
+      cursor: pointer;
+      margin-top: -4px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
     button {
-      margin-top: 10px;
-      padding: 8px 12px;
-      font-size: 16px;
-      background: #0055aa;
+      margin: 5px 0;
+      padding: 8px 14px;
+      background: #0074D9;
       color: white;
       border: none;
-      border-radius: 5px;
+      border-radius: 4px;
       cursor: pointer;
+      font-size: 15px;
     }
+
     button:hover {
-      background: #0077cc;
+      background: #005fa3;
     }
-    .section {
-      margin-bottom: 20px;
-    }
-    #readerLine {
-      font-size: 18px;
-      margin-top: 20px;
-      min-height: 60px;
-      background: white;
-      padding: 15px;
-      border-radius: 8px;
-    }
-    #speedSlider {
+
+    input[type="text"] {
       width: 100%;
+      padding: 6px;
       margin-top: 5px;
     }
-    #timer {
-      font-weight: bold;
-      color: darkred;
-      margin-top: 10px;
+
+    label {
+      display: block;
+      margin: 5px 0;
     }
-    #answerInputDiv, #bonusInputDiv, #answer, #bonusAnswer, #bonus, #timer {
-      display: none;
-      margin-top: 15px;
+
+    .section-title {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+
+    #speedLabel {
+      margin-top: 5px;
+      font-size: 14px;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
-  <div id="sidebar">
-    <h2>Categories</h2>
+  <div class="sidebar">
+    <h2>⚙️ Filters</h2>
+
+    <div class="section-title">Categories</div>
+    <label><input type="checkbox" id="selectAllCats"> Select All</label>
     <div id="categoryList">
-      <label><input type="checkbox" value="PHYSICS" /> Physics</label>
-      <label><input type="checkbox" value="CHEMISTRY" /> Chemistry</label>
-      <label><input type="checkbox" value="BIOLOGY" /> Biology</label>
-      <label><input type="checkbox" value="EARTH AND SPACE" /> Earth & Space</label>
-      <label><input type="checkbox" value="ENERGY" /> Energy</label>
-      <label><input type="checkbox" value="MATH" /> Math</label>
-      <label><input type="checkbox" value="GENERAL SCIENCE" /> General Science</label>
+      <label><input type="checkbox" value="PHYSICS"> Physics</label>
+      <label><input type="checkbox" value="CHEMISTRY"> Chemistry</label>
+      <label><input type="checkbox" value="BIOLOGY"> Biology</label>
+      <label><input type="checkbox" value="EARTH AND SPACE"> Earth and Space</label>
+      <label><input type="checkbox" value="ENERGY"> Energy</label>
+      <label><input type="checkbox" value="MATH"> Math</label>
+      <label><input type="checkbox" value="GENERAL SCIENCE"> General Science</label>
+      <label><input type="checkbox" value="ASTRONOMY"> Astronomy</label>
+      <label><input type="checkbox" value="COMPUTER SCIENCE"> Computer Science</label>
     </div>
 
-    <h2>Difficulty</h2>
-    <div id="difficultyList">
-      <label><input type="checkbox" value="middle_school" /> Middle School</label>
-      <label><input type="checkbox" value="high_school" /> High School</label>
-    </div>
+    <div class="section-title">Difficulty</div>
+    <label><input type="checkbox" value="middle_school"> Middle School</label>
+    <label><input type="checkbox" value="high_school"> High School</label>
 
-    <h2>Speed (Recommended: 5–8)</h2>
-    <input type="range" min="1" max="10" value="7" id="speedSlider" />
-    <div id="speedLabel">Speed: 7</div>
+    <div class="section-title">Bonus Mode</div>
+    <label><input type="radio" name="bonusMode" value="auto" checked> Always</label>
+    <label><input type="radio" name="bonusMode" value="tossup"> If Tossup Correct</label>
+    <label><input type="radio" name="bonusMode" value="never"> Never</label>
+
+    <div class="section-title">Reading Speed</div>
+    <input type="range" id="speedSlider" min="1" max="10" value="7" />
+    <span id="speedLabel">Speed: 7 (Recommended: 5–8)</span>
   </div>
 
-  <div id="main">
+  <div class="main">
     <h1>🔬 SciBowl QBReader</h1>
-    <div class="section">
-      <button onclick="loadQuestion()">Load Question</button>
-      <button id="buzzBtn" onclick="buzz()" style="display:none">Buzz!</button>
-      <div id="timer"></div>
+    <button onclick="loadQuestion()">Load Question</button>
+    <button id="pauseBtn" onclick="togglePause()" class="hidden">Pause</button>
+    <button id="buzzBtn" onclick="buzz()" class="hidden">Buzz!</button>
+
+    <div id="loading" class="hidden">Loading question...</div>
+    <div id="readerLine"></div>
+    <div id="buzzerTimer"></div>
+
+    <div id="answer" class="hidden"></div>
+    <div id="answerInputDiv" class="hidden">
+      <input type="text" id="userAnswer" placeholder="Your answer..." />
+      <button onclick="submitAnswer()">Submit Answer</button>
     </div>
-
-    <div id="readerLine" class="section"></div>
-
-    <div id="answerInputDiv">
-      <input type="text" id="userAnswer" placeholder="Enter your answer..." />
-      <button onclick="submitAnswer()">Submit</button>
-    </div>
-
-    <div id="answer"></div>
-
-    <div id="bonus" class="section"></div>
-    <div id="bonusInputDiv">
-      <input type="text" id="userBonus" placeholder="Enter bonus..." />
-      <button onclick="submitBonus()">Submit Bonus</button>
-    </div>
-    <div id="bonusAnswer"></div>
   </div>
 
   <script>
+    let wordIndex = 0;
+    let interval = null;
+    let paused = false;
+    let readingDone = false;
+    let buzzed = false;
     let questionData = null;
-    let currentWords = [], wordIndex = 0, interval = null;
-    let buzzed = false, readingDone = false;
-    let timerInterval = null, timerCount = 0;
-    const reader = document.getElementById("readerLine");
 
-    document.getElementById("speedSlider").addEventListener("input", function () {
-      document.getElementById("speedLabel").textContent = "Speed: " + this.value;
+    const slider = document.getElementById("speedSlider");
+    const speedLabel = document.getElementById("speedLabel");
+
+    slider.addEventListener("input", () => {
+      speedLabel.textContent = `Speed: ${slider.value} (Recommended: 5–8)`;
     });
 
-    async function loadQuestion() {
-      resetAll();
+    document.addEventListener("keydown", e => {
+      if (e.code === "Space" && document.getElementById("buzzBtn").style.display !== "none") {
+        e.preventDefault();
+        buzz();
+      }
+    });
 
-      const cats = getChecked("categoryList");
-      const diffs = getChecked("difficultyList");
-      const body = {};
-      if (cats.length) body.categories = cats;
-      if (diffs.length) body.difficulties = diffs;
-
-      const res = await fetch("https://sci-bowl-proxy.onrender.com/api/random", {
-        method: Object.keys(body).length ? "POST" : "GET",
-        headers: { "Content-Type": "application/json" },
-        body: Object.keys(body).length ? JSON.stringify(body) : null
-      });
-      const data = await res.json();
-      questionData = data.questions[0];
-      currentWords = questionData.tossup_question.split(" ");
-      wordIndex = 0;
-      readingDone = false;
-      buzzed = false;
-
-      startReading();
-    }
+    document.getElementById("selectAllCats").addEventListener("change", function () {
+      document.querySelectorAll("#categoryList input[type='checkbox']").forEach(cb => cb.checked = this.checked);
+    });
 
     function getChecked(id) {
-      return Array.from(document.querySelectorAll(`#${id} input:checked`)).map(cb => cb.value);
+      return [...document.querySelectorAll(`#${id} input:checked`)].map(el => el.value);
     }
 
-    function resetAll() {
+    async function loadQuestion() {
       clearInterval(interval);
-      clearInterval(timerInterval);
+      wordIndex = 0;
+      buzzed = false;
+      readingDone = false;
+
       document.getElementById("readerLine").innerHTML = "";
-      document.getElementById("timer").style.display = "none";
-      document.getElementById("buzzBtn").style.display = "inline";
-      document.getElementById("answerInputDiv").style.display = "none";
-      document.getElementById("answer").style.display = "none";
-      document.getElementById("bonus").style.display = "none";
-      document.getElementById("bonusInputDiv").style.display = "none";
-      document.getElementById("bonusAnswer").style.display = "none";
-      document.getElementById("userAnswer").value = "";
-      document.getElementById("userBonus").value = "";
+      document.getElementById("loading").classList.remove("hidden");
+      document.getElementById("answer").classList.add("hidden");
+      document.getElementById("answerInputDiv").classList.add("hidden");
+      document.getElementById("buzzBtn").classList.add("hidden");
+      document.getElementById("buzzerTimer").textContent = "";
+
+      let payload = {};
+      let categories = getChecked("categoryList");
+      let difficulties = getChecked("body");
+
+      if (categories.length) payload.categories = categories;
+      if (difficulties.length) payload.difficulties = difficulties;
+
+      const res = await fetch("https://sci-bowl-proxy.onrender.com/api/random", {
+        method: Object.keys(payload).length ? "POST" : "GET",
+        headers: { "Content-Type": "application/json" },
+        body: Object.keys(payload).length ? JSON.stringify(payload) : null
+      });
+
+      const data = await res.json();
+      if (!data.questions || !data.questions[0]) {
+        alert("No questions found.");
+        return;
+      }
+
+      questionData = data.questions[0];
+      document.getElementById("loading").classList.add("hidden");
+      document.getElementById("buzzBtn").classList.remove("hidden");
+
+      startReading(questionData.tossup_question);
     }
 
-    function startReading() {
-interval = setInterval(() => {
-  if (wordIndex < currentWords.length) {
-    reader.innerHTML += currentWords[wordIndex++] + " ";
-  } else {
-    clearInterval(interval);
-    readingDone = true;
-    MathJax.typesetPromise([reader]);
-    if (!buzzed) startTimer(5, "Buzz Timer", () => {
-      document.getElementById("buzzBtn").style.display = "none";
-      showAnswer();
-    });
-  }
-}, speed);
+    function startReading(text) {
+      const words = text.split(/\s+/);
+      const reader = document.getElementById("readerLine");
+      const speed = 1100 - parseInt(slider.value) * 100;
+
+      interval = setInterval(() => {
+        if (!paused && wordIndex < words.length) {
+          reader.innerHTML += words[wordIndex++] + " ";
+        }
+        if (wordIndex >= words.length) {
+          clearInterval(interval);
+          readingDone = true;
+          MathJax.typesetPromise([reader]);
+          startTimer(5, "Buzz Timer", () => {
+            document.getElementById("buzzBtn").classList.add("hidden");
+            showAnswer();
+          });
+        }
+      }, speed);
+    }
+
+    function togglePause() {
+      paused = !paused;
+      document.getElementById("pauseBtn").textContent = paused ? "Resume" : "Pause";
+    }
 
     function buzz() {
-      if (!readingDone && !buzzed) clearInterval(interval);
+      if (readingDone || wordIndex < 1) return;
       buzzed = true;
-      document.getElementById("buzzBtn").style.display = "none";
-      document.getElementById("answerInputDiv").style.display = "block";
+      clearInterval(interval);
+      document.getElementById("buzzBtn").classList.add("hidden");
+      document.getElementById("answerInputDiv").classList.remove("hidden");
       startTimer(10, "Answer Timer", () => {
-        document.getElementById("answerInputDiv").style.display = "none";
+        document.getElementById("answerInputDiv").classList.add("hidden");
         showAnswer();
       });
     }
 
     function startTimer(seconds, label, callback) {
-      timerCount = seconds;
-      const timer = document.getElementById("timer");
-      timer.style.display = "block";
-      timer.textContent = `${label}: ${timerCount}`;
-      timerInterval = setInterval(() => {
-        timerCount--;
-        timer.textContent = `${label}: ${timerCount}`;
-        if (timerCount <= 0) {
-          clearInterval(timerInterval);
-          timer.style.display = "none";
+      const timerDiv = document.getElementById("buzzerTimer");
+      timerDiv.textContent = `⏱ ${label}: ${seconds}`;
+      const countdown = setInterval(() => {
+        seconds--;
+        timerDiv.textContent = `⏱ ${label}: ${seconds}`;
+        if (seconds <= 0) {
+          clearInterval(countdown);
           callback();
         }
       }, 1000);
     }
 
     function submitAnswer() {
-      clearInterval(timerInterval);
-      const user = document.getElementById("userAnswer").value.toLowerCase();
-      const correct = questionData.tossup_answer.toLowerCase();
-      const result = correct.includes(user) ? "✅ Correct!" : "❌ Incorrect.";
-      document.getElementById("answer").innerHTML = `${result}<br><b>Answer:</b> ${questionData.tossup_answer}`;
-      document.getElementById("answer").style.display = "block";
+      const user = document.getElementById("userAnswer").value.trim().toLowerCase();
+      const correct = questionData.tossup_answer.trim().toLowerCase();
+      const isCorrect = user && correct.includes(user);
 
-      if (result.includes("Correct")) showBonus();
-      else showAnswer();
+      const result = isCorrect ? "✅ Correct!" : "❌ Incorrect.";
+      document.getElementById("answer").innerHTML = `${result}<br><b>Answer:</b> ${questionData.tossup_answer}`;
+      document.getElementById("answer").classList.remove("hidden");
+      document.getElementById("answerInputDiv").classList.add("hidden");
+
+      if (!isCorrect) {
+        document.getElementById("buzzBtn").classList.add("hidden");
+        showAnswer();
+      }
     }
 
     function showAnswer() {
-      reader.innerHTML = questionData.tossup_question;
-      MathJax.typesetPromise([reader]);
       document.getElementById("answer").innerHTML = `<b>Answer:</b> ${questionData.tossup_answer}`;
-      document.getElementById("answer").style.display = "block";
-    }
-
-    function showBonus() {
-      document.getElementById("bonus").innerHTML = `Bonus: ${questionData.bonus_question}`;
-      MathJax.typesetPromise([document.getElementById("bonus")]);
-      document.getElementById("bonus").style.display = "block";
-      document.getElementById("bonusInputDiv").style.display = "block";
-      startTimer(20, "Bonus Timer", () => {
-        document.getElementById("bonusInputDiv").style.display = "none";
-        document.getElementById("bonusAnswer").innerHTML = `<b>Bonus Answer:</b> ${questionData.bonus_answer}`;
-        document.getElementById("bonusAnswer").style.display = "block";
-      });
-    }
-
-    function submitBonus() {
-      clearInterval(timerInterval);
-      document.getElementById("bonusAnswer").innerHTML = `<b>Bonus Answer:</b> ${questionData.bonus_answer}`;
-      document.getElementById("bonusAnswer").style.display = "block";
+      document.getElementById("answer").classList.remove("hidden");
     }
   </script>
 </body>
