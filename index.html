@@ -160,7 +160,6 @@
     let isTossupCorrect = false;
     let readingBonus = false;
     let bonusBuzzed = false;
-    let bonusAllowed = false;
     let bonusData = null;
 
     const slider = document.getElementById("speedSlider");
@@ -196,7 +195,6 @@
       isTossupCorrect = false;
       readingBonus = false;
       bonusBuzzed = false;
-      bonusAllowed = false;
 
       document.getElementById("readerLine").innerHTML = "";
       document.getElementById("loading").classList.remove("hidden");
@@ -235,6 +233,7 @@
           question: questionData.bonus_question,
           answer: questionData.bonus_answer
         };
+
         document.getElementById("loading").classList.add("hidden");
         document.getElementById("buzzBtn").classList.remove("hidden");
 
@@ -344,11 +343,25 @@
 
     function startBonus() {
       if (!bonusData || !bonusData.question) return;
+
       readingBonus = true;
       buzzAllowed = true;
+      timerLocked = false;
+      buzzed = false;
+      bonusBuzzed = false;
+      wordIndex = 0;
+
       document.getElementById("readerLine").innerHTML = "";
-      document.getElementById("showBonusBtn").classList.add("hidden");
+      document.getElementById("buzzerTimer").textContent = "";
+      document.getElementById("answer").classList.add("hidden");
+      document.getElementById("answerInputDiv").classList.add("hidden");
       document.getElementById("bonusAnswer").classList.add("hidden");
+      document.getElementById("userBonusAnswer").value = "";
+      document.getElementById("bonusInputDiv").classList.add("hidden");
+
+      document.getElementById("showBonusBtn").classList.add("hidden");
+      document.getElementById("buzzBtn").classList.remove("hidden");
+
       startReading(bonusData.question);
     }
 
