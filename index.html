@@ -102,11 +102,6 @@
       <label><input type="checkbox" value="high_school"> High School</label>
     </div>
 
-    <div class="section-title">Bonus Mode</div>
-    <label><input type="radio" name="bonusMode" value="auto" checked> Always</label>
-    <label><input type="radio" name="bonusMode" value="tossup"> If Tossup Correct</label>
-    <label><input type="radio" name="bonusMode" value="never"> Never</label>
-
     <div class="section-title">Reading Speed</div>
     <input type="range" id="speedSlider" min="1" max="10" value="7" />
     <span id="speedLabel">Speed: 7 (Recommended: 5–8)</span>
@@ -313,10 +308,8 @@
       const correct = questionData.tossup_answer;
       const isMC = questionData.question_type === "Multiple Choice";
 
-      // Grade silently (still used for bonus logic) but do NOT display correctness
-      let result = "incorrect";
       try {
-        result = await gradeAnswer(user, correct, isMC);
+        await gradeAnswer(user, correct, isMC);
       } catch (_) {}
 
       if (countdownId) clearInterval(countdownId);
@@ -326,7 +319,7 @@
       document.getElementById("answer").classList.remove("hidden");
       document.getElementById("answerInputDiv").classList.add("hidden");
       timerLocked = true;
-      showBonusIfNeeded(result === "correct");
+      showBonusIfNeeded();
     }
 
     async function submitBonusAnswer() {
@@ -334,7 +327,6 @@
       const correct = questionData.bonus_answer;
       const isMC = questionData.bonus_type === "Multiple Choice";
 
-      // Grade silently
       try {
         await gradeAnswer(user, correct, isMC);
       } catch (_) {}
@@ -355,7 +347,7 @@
         body: JSON.stringify({ userAnswer, correctAnswer, isMultipleChoice: isMC })
       });
       const data = await res.json();
-      return data.result; // "correct" or "incorrect"
+      return data.result;
     }
 
     function showAnswer(bonus = false) {
@@ -365,10 +357,7 @@
       document.getElementById(div).classList.remove("hidden");
     }
 
-    function showBonusIfNeeded(correct = true) {
-      const mode = document.querySelector('input[name="bonusMode"]:checked').value;
-      if (mode === "never") return;
-      if (mode === "tossup" && !correct) return;
+    function showBonusIfNeeded() {
       if (bonusShown) return;
       bonusShown = true;
       document.getElementById("showBonusBtn").classList.remove("hidden");
@@ -396,3 +385,4 @@
   </script>
 </body>
 </html>
+
