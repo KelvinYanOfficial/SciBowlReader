@@ -5,8 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>SciBowl QBReader</title>
   <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-  <script id="MathJax-script" async
-    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
   <style>
     body {
       margin: 0;
@@ -54,7 +53,6 @@
     button:disabled {
       background: #ccc;
       cursor: not-allowed;
-      opacity: 0.5;
     }
 
     .hidden {
@@ -116,7 +114,7 @@
     <h1>🔬 SciBowl QBReader</h1>
     <button onclick="loadQuestion()">Load Question</button>
     <button id="pauseBtn" onclick="togglePause()" class="hidden">Pause</button>
-    <button id="buzzBtn" onclick="buzz()" class="hidden" disabled>Buzz!</button>
+    <button id="buzzBtn" onclick="buzz()" class="hidden">Buzz!</button>
     <button id="showBonusBtn" onclick="startBonus()" class="hidden">Show Bonus</button>
 
     <div id="questionType" style="margin-top:10px; font-weight:bold;"></div>
@@ -182,7 +180,6 @@
       document.getElementById("bonusInputDiv").classList.add("hidden");
       document.getElementById("answerInputDiv").classList.add("hidden");
       document.getElementById("buzzBtn").classList.remove("hidden");
-      document.getElementById("buzzBtn").disabled = true;
       document.getElementById("buzzerTimer").textContent = "";
       document.getElementById("showBonusBtn").classList.add("hidden");
       document.getElementById("questionType").textContent = "";
@@ -214,6 +211,7 @@
         questionData.bonus_type = getQuestionType(questionData.bonus_question);
         document.getElementById("questionType").textContent = `Type: ${questionData.question_type}`;
         document.getElementById("loading").classList.add("hidden");
+
         startReading(questionData.tossup_question, false);
       } catch (err) {
         document.getElementById("readerLine").innerHTML = `<p style="color:red;">⚠️ Failed to load question.</p>`;
@@ -230,6 +228,8 @@
       const speed = 1100 - parseInt(document.getElementById("speedSlider").value) * 100;
       reader.innerHTML = "";
 
+      document.getElementById("buzzBtn").disabled = false;
+
       interval = setInterval(() => {
         if (!paused && wordIndex < words.length) {
           reader.innerHTML += words[wordIndex++] + " ";
@@ -237,7 +237,6 @@
         if (wordIndex >= words.length) {
           clearInterval(interval);
           readingDone = true;
-          document.getElementById("buzzBtn").disabled = false;
           MathJax.typesetPromise([reader]);
           if (!buzzed && !bonus) {
             startTimer(5, "Buzz Timer", () => {
@@ -258,7 +257,7 @@
     }
 
     function buzz() {
-      if (!readingDone || timerLocked || bonusTimerLocked) return;
+      if (timerLocked || bonusTimerLocked) return;
       if (isBonus && bonusBuzzed) return;
       if (!isBonus && buzzed) return;
 
@@ -361,7 +360,6 @@
       isBonus = true;
 
       document.getElementById("buzzBtn").classList.remove("hidden");
-      document.getElementById("buzzBtn").disabled = true;
       document.getElementById("questionType").textContent = `Type: ${questionData.bonus_type}`;
       startReading(questionData.bonus_question, true);
     }
