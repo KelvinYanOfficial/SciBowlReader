@@ -7,70 +7,22 @@
   <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
   <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
   <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      display: flex;
-      height: 100vh;
-    }
-    .sidebar {
-      width: 250px;
-      background: #f2f2f2;
-      padding: 20px;
-      overflow-y: auto;
-      border-right: 1px solid #ccc;
-    }
-    .main {
-      flex: 1;
-      padding: 20px;
-      overflow-y: auto;
-    }
-    h1 {
-      margin-top: 0;
-    }
-    #readerLine {
-      font-size: 1.1em;
-      margin-top: 15px;
-      min-height: 60px;
-      white-space: pre-wrap;
-    }
-    #loading, #buzzerTimer, #answer, #bonusAnswer {
-      margin-top: 15px;
-      font-weight: bold;
-    }
-    .hidden {
-      display: none;
-    }
+    body { margin: 0; font-family: Arial, sans-serif; display: flex; height: 100vh; }
+    .sidebar { width: 250px; background: #f2f2f2; padding: 20px; overflow-y: auto; border-right: 1px solid #ccc; }
+    .main { flex: 1; padding: 20px; overflow-y: auto; }
+    h1 { margin-top: 0; }
+    #readerLine { font-size: 1.1em; margin-top: 15px; min-height: 60px; white-space: pre-wrap; }
+    #loading, #buzzerTimer, #answer, #bonusAnswer { margin-top: 15px; font-weight: bold; }
+    .hidden { display: none; }
     button {
-      margin: 5px 0;
-      padding: 8px 14px;
-      background: #0074D9;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 15px;
+      margin: 5px 0; padding: 8px 14px; background: #0074D9; color: white;
+      border: none; border-radius: 4px; cursor: pointer; font-size: 15px;
     }
-    button:hover {
-      background: #005fa3;
-    }
-    input[type=range] {
-      width: 100%;
-    }
-    input[type="text"] {
-      width: 100%;
-      padding: 6px;
-      margin-top: 5px;
-    }
-    .section-title {
-      margin-top: 20px;
-      font-weight: bold;
-    }
-    #speedLabel {
-      margin-top: 5px;
-      font-size: 14px;
-      font-weight: bold;
-    }
+    button:hover { background: #005fa3; }
+    input[type=range] { width: 100%; }
+    input[type="text"] { width: 100%; padding: 6px; margin-top: 5px; }
+    .section-title { margin-top: 20px; font-weight: bold; }
+    #speedLabel { margin-top: 5px; font-size: 14px; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -102,6 +54,7 @@
     <input type="range" id="speedSlider" min="1" max="10" value="7" />
     <span id="speedLabel">Speed: 7 (Recommended: 5–8)</span>
   </div>
+
   <div class="main">
     <h1>🔬 SciBowl QBReader</h1>
     <button onclick="loadQuestion()">Load Question</button>
@@ -262,6 +215,7 @@
 
     function submitAnswer() {
       if (timerLocked) return;
+      clearInterval(countdownInterval); // ✅ FIX ADDED HERE
       const user = document.getElementById("userAnswer").value.trim().toLowerCase();
       const correct = questionData.tossup_answer.trim().toLowerCase();
       isTossupCorrect = user && correct.includes(user);
@@ -303,6 +257,7 @@
 
     function submitBonusAnswer() {
       if (timerLocked) return;
+      clearInterval(countdownInterval);
       const user = document.getElementById("userBonusAnswer").value.trim().toLowerCase();
       const correct = bonusData.answer.trim().toLowerCase();
       const isCorrect = user && correct.includes(user);
@@ -310,7 +265,6 @@
       document.getElementById("bonusAnswer").innerHTML = `${result}<br><b>Bonus Answer:</b> ${bonusData.answer}`;
       document.getElementById("bonusAnswer").classList.remove("hidden");
       document.getElementById("bonusInputDiv").classList.add("hidden");
-      clearInterval(countdownInterval);
       timerLocked = true;
     }
   </script>
