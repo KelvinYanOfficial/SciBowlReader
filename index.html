@@ -172,7 +172,11 @@
     }
 
     function getQuestionType(text) {
-      return text.trim().toLowerCase().startsWith("multiple choice") ? "Multiple Choice" : "Short Answer";
+      const lower = text.trim().toLowerCase();
+      if (lower.startsWith("multiple choice") || lower.match(/^\([a-d]\)/)) {
+        return "Multiple Choice";
+      }
+      return "Short Answer";
     }
 
     async function loadQuestion() {
@@ -216,7 +220,7 @@
         questionData = data.questions[0];
         questionData.question_type = getQuestionType(questionData.tossup_question);
         questionData.bonus_type = getQuestionType(questionData.bonus_question);
-        document.getElementById("questionType").textContent = `Type: ${questionData.question_type}`;
+        document.getElementById("questionType").textContent = `Type: ${questionData.question_type} – ${questionData.category}`;
         document.getElementById("loading").classList.add("hidden");
         startReading(questionData.tossup_question, false);
       } catch (err) {
@@ -386,7 +390,7 @@
       buzzed = false;
       isBonus = true;
 
-      document.getElementById("questionType").textContent = `Type: ${questionData.bonus_type}`;
+      document.getElementById("questionType").textContent = `Type: ${questionData.bonus_type} – ${questionData.category}`;
       startReading(questionData.bonus_question, true);
     }
   </script>
