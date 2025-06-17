@@ -141,6 +141,7 @@
     let questionData = null;
     let wordIndex = 0;
     let interval = null;
+    let countdownId = null;
     let paused = false;
     let buzzed = false;
     let bonusBuzzed = false;
@@ -175,14 +176,17 @@
     }
 
     async function loadQuestion() {
+      if (countdownId) clearInterval(countdownId);
+      countdownId = null;
+
       clearInterval(interval);
+      document.getElementById("buzzBtn").classList.add("hidden");
       document.getElementById("readerLine").innerHTML = "";
       document.getElementById("loading").classList.remove("hidden");
       document.getElementById("answer").classList.add("hidden");
       document.getElementById("bonusAnswer").classList.add("hidden");
       document.getElementById("bonusInputDiv").classList.add("hidden");
       document.getElementById("answerInputDiv").classList.add("hidden");
-      document.getElementById("buzzBtn").classList.remove("hidden");
       document.getElementById("buzzerTimer").textContent = "";
       document.getElementById("buzzerTimer").classList.add("hidden");
       document.getElementById("showBonusBtn").classList.add("hidden");
@@ -210,11 +214,9 @@
         });
         const data = await res.json();
         questionData = data.questions[0];
-
         questionData.question_type = getQuestionType(questionData.tossup_question);
         questionData.bonus_type = getQuestionType(questionData.bonus_question);
         document.getElementById("questionType").textContent = `Type: ${questionData.question_type}`;
-
         document.getElementById("loading").classList.add("hidden");
         startReading(questionData.tossup_question, false);
       } catch (err) {
@@ -231,6 +233,8 @@
       const reader = document.getElementById("readerLine");
       const speed = 1100 - parseInt(speedSlider.value) * 100;
       reader.innerHTML = "";
+
+      document.getElementById("buzzBtn").classList.remove("hidden");
 
       interval = setInterval(() => {
         if (!paused && wordIndex < words.length) {
@@ -265,8 +269,6 @@
 
       clearInterval(interval);
       document.getElementById("buzzBtn").classList.add("hidden");
-
-      // ✅ Fix: clear leftover timer text before starting bonus
       document.getElementById("buzzerTimer").textContent = "";
       document.getElementById("buzzerTimer").classList.add("hidden");
 
@@ -291,14 +293,18 @@
     }
 
     function startTimer(seconds, label, callback) {
+      if (countdownId) clearInterval(countdownId);
+      countdownId = null;
+
       const timerDiv = document.getElementById("buzzerTimer");
       timerDiv.classList.remove("hidden");
       timerDiv.textContent = `⏱ ${label}: ${seconds}`;
-      const countdown = setInterval(() => {
+      countdownId = setInterval(() => {
         seconds--;
         timerDiv.textContent = `⏱ ${label}: ${seconds}`;
         if (seconds <= 0) {
-          clearInterval(countdown);
+          clearInterval(countdownId);
+          countdownId = null;
           timerDiv.classList.add("hidden");
           callback();
         }
