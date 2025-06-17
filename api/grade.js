@@ -6,12 +6,28 @@ export default async function handler(req, res) {
   const { userAnswer, correctAnswer, isMultipleChoice = false } = req.body;
 
   if (isMultipleChoice) {
-    const clean = s => s.trim().toLowerCase().replace(/\.$/, "");
+    const normalize = s => s.trim().toLowerCase().replace(/\.$/, "");
+
+    const userNorm = normalize(userAnswer);
+    const correctNorm = normalize(correctAnswer);
+
+    const correctLetter = correctNorm[0];
+    const correctText = correctNorm.replace(/^[a-dw-z]\)\s*/, "");
+
+    const userLetter = userNorm[0];
+    const userText = userNorm.replace(/^[a-dw-z]\)\s*/, "");
+
+    const isCorrect =
+      userNorm === correctNorm ||       // Full answer match
+      userText === correctText ||       // Just the text matches
+      userLetter === correctLetter;     // Just the letter matches
+
     return res.status(200).json({
-      result: clean(userAnswer) === clean(correctAnswer) ? "correct" : "incorrect"
+      result: isCorrect ? "correct" : "incorrect"
     });
   }
 
+  // Short Answer: AI grading
   const prompt = `
 You are an official Science Bowl answer grader. The student answered: "${userAnswer}".
 The correct answer is: "${correctAnswer}".
@@ -41,9 +57,10 @@ Output exactly "correct" or "incorrect" – no punctuation.
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content?.trim().toLowerCase();
     const grade = content === "correct" ? "correct" : "incorrect";
+
     return res.status(200).json({ result: grade });
   } catch (err) {
-    console.error(err);
+    console.error("AI grading error:", err);
     return res.status(500).json({ error: "Grading failed" });
   }
 }
