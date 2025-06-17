@@ -122,7 +122,7 @@
     <div id="bonusAnswer" class="hidden"></div>
     <div id="bonusInputDiv" class="hidden">
       <input type="text" id="userBonusAnswer" placeholder="Your bonus answer..." />
-      <button onclick="submitBonusAnswer()">Submit</button> <!-- ✅ Bonus Submit Button -->
+      <button onclick="submitBonusAnswer()">Submit</button>
     </div>
   </div>
 
@@ -240,7 +240,7 @@
             });
           }
           if (!bonusBuzzed && bonus) {
-            document.getElementById("buzzBtn").classList.remove("hidden"); // ✅ allow buzz after reading
+            document.getElementById("buzzBtn").classList.remove("hidden"); // ✅ FIXED: allow buzzing
             startTimer(20, "Bonus Timer", () => {
               if (!bonusBuzzed) {
                 bonusTimerLocked = true;
@@ -364,6 +364,7 @@
       buzzed = false;
       isBonus = true;
 
+      document.getElementById("buzzBtn").classList.remove("hidden"); // ✅ Ensure buzz is shown at start
       document.getElementById("questionType").textContent = `Type: ${questionData.bonus_type}`;
       startReading(questionData.bonus_question, true);
     }
