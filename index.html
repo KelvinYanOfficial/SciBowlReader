@@ -122,6 +122,7 @@
     <div id="bonusAnswer" class="hidden"></div>
     <div id="bonusInputDiv" class="hidden">
       <input type="text" id="userBonusAnswer" placeholder="Your bonus answer..." />
+      <button onclick="submitBonusAnswer()">Submit</button> <!-- ✅ Added this -->
     </div>
   </div>
 
@@ -306,6 +307,18 @@
       document.getElementById("answerInputDiv").classList.add("hidden");
       timerLocked = true;
       showBonusIfNeeded(result === "correct");
+    }
+
+    async function submitBonusAnswer() {
+      const user = document.getElementById("userBonusAnswer").value.trim();
+      const correct = questionData.bonus_answer;
+      const isMC = questionData.bonus_type === "Multiple Choice";
+
+      const result = await gradeAnswer(user, correct, isMC);
+      document.getElementById("bonusAnswer").innerHTML = `${result === "correct" ? "✅ Correct!" : "❌ Incorrect."}<br><b>Answer:</b> ${correct}`;
+      document.getElementById("bonusAnswer").classList.remove("hidden");
+      document.getElementById("bonusInputDiv").classList.add("hidden");
+      bonusTimerLocked = true;
     }
 
     async function gradeAnswer(userAnswer, correctAnswer, isMC) {
