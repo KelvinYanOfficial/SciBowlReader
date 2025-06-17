@@ -5,39 +5,46 @@ export default async function handler(req, res) {
 
   const { userAnswer, correctAnswer, isMultipleChoice = false } = req.body;
 
+  let prompt = "";
+
   if (isMultipleChoice) {
-    const normalize = s => s.trim().toLowerCase().replace(/\.$/, "");
+    prompt = `
+You are a Science Bowl grader.
 
-    const userNorm = normalize(userAnswer);
-    const correctNorm = normalize(correctAnswer);
+This is a MULTIPLE CHOICE question.
 
-    const correctLetter = correctNorm[0];
-    const correctText = correctNorm.replace(/^[a-dw-z]\)\s*/, "");
+The student's answer was: "${userAnswer}"
+The correct answer is: "${correctAnswer}"
 
-    const userLetter = userNorm[0];
-    const userText = userNorm.replace(/^[a-dw-z]\)\s*/, "");
+Mark the answer "correct" only if:
+- The student's letter (e.g., "B") matches the correct letter
+- OR the student's full answer text matches the correct answer meaning
+- Do not accept vague answers like just "the second one" or "the last choice"
+- Capitalization, punctuation, or spacing does not matter
 
-    const isCorrect =
-      userNorm === correctNorm ||       // Full answer match
-      userText === correctText ||       // Just the text matches
-      userLetter === correctLetter;     // Just the letter matches
+Otherwise, return "incorrect".
 
-    return res.status(200).json({
-      result: isCorrect ? "correct" : "incorrect"
-    });
+Output exactly "correct" or "incorrect" — no punctuation.
+    `.trim();
+  } else {
+    prompt = `
+You are a Science Bowl grader.
+
+This is a SHORT ANSWER question.
+
+The student's answer was: "${userAnswer}"
+The correct answer is: "${correctAnswer}"
+
+Mark the answer "correct" only if:
+- The student clearly provides the same meaning and essential keywords
+- The answer is specific and accurate
+- Do not accept vague, incomplete, or overly broad answers
+
+Otherwise, return "incorrect".
+
+Output exactly "correct" or "incorrect" — no punctuation.
+    `.trim();
   }
-
-  // Short Answer: AI grading
-  const prompt = `
-You are an official Science Bowl answer grader. The student answered: "${userAnswer}".
-The correct answer is: "${correctAnswer}".
-
-Respond ONLY with "correct" if the student's answer matches the correct answer in meaning and contains all essential words.
-
-If the student's answer is vague, incomplete, overly broad, or imprecise, respond "incorrect".
-
-Output exactly "correct" or "incorrect" – no punctuation.
-  `.trim();
 
   try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
