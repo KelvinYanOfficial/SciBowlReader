@@ -131,6 +131,10 @@
     </div>
 
     <div id="bonusAnswer" class="hidden"></div>
+    <div id="bonusInputDiv" class="hidden">
+      <input type="text" id="userBonusAnswer" placeholder="Your bonus answer..." />
+      <button onclick="submitBonusAnswer()">Submit</button>
+    </div>
   </div>
 
   <script>
@@ -181,6 +185,7 @@
       document.getElementById("loading").classList.remove("hidden");
       document.getElementById("answer").classList.add("hidden");
       document.getElementById("bonusAnswer").classList.add("hidden");
+      document.getElementById("bonusInputDiv").classList.add("hidden");
       document.getElementById("answerInputDiv").classList.add("hidden");
       document.getElementById("buzzerTimer").textContent = "";
       document.getElementById("buzzerTimer").classList.add("hidden");
@@ -269,7 +274,9 @@
 
       if (isBonus) {
         bonusBuzzed = true;
+        document.getElementById("bonusInputDiv").classList.remove("hidden");
         startTimer(20, "Bonus Timer", () => {
+          document.getElementById("bonusInputDiv").classList.add("hidden");
           showAnswer(true);
           bonusTimerLocked = true;
         });
@@ -321,6 +328,22 @@
       showBonusIfNeeded(result === "correct");
     }
 
+    async function submitBonusAnswer() {
+      const user = document.getElementById("userBonusAnswer").value.trim();
+      const correct = questionData.bonus_answer;
+      const isMC = questionData.bonus_type === "Multiple Choice";
+
+      const result = await gradeAnswer(user, correct, isMC);
+
+      if (countdownId) clearInterval(countdownId);
+      countdownId = null;
+
+      document.getElementById("bonusAnswer").innerHTML = `${result === "correct" ? "✅ Correct!" : "❌ Incorrect."}<br><b>Answer:</b> ${correct}`;
+      document.getElementById("bonusAnswer").classList.remove("hidden");
+      document.getElementById("bonusInputDiv").classList.add("hidden");
+      bonusTimerLocked = true;
+    }
+
     async function gradeAnswer(userAnswer, correctAnswer, isMC) {
       const res = await fetch("/api/grade", {
         method: "POST",
@@ -351,9 +374,11 @@
       document.getElementById("showBonusBtn").classList.add("hidden");
       document.getElementById("answer").classList.add("hidden");
       document.getElementById("answerInputDiv").classList.add("hidden");
+      document.getElementById("bonusAnswer").classList.add("hidden");
+      document.getElementById("userBonusAnswer").value = "";
+      document.getElementById("bonusInputDiv").classList.add("hidden");
       document.getElementById("buzzerTimer").textContent = "";
       document.getElementById("buzzerTimer").classList.add("hidden");
-      document.getElementById("bonusAnswer").classList.add("hidden");
 
       bonusBuzzed = false;
       bonusTimerLocked = false;
