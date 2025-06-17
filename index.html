@@ -166,6 +166,7 @@
     let questionData = null;
     let timerLocked = false;
     let countdownInterval = null;
+    let buzzAllowed = true;
 
     const slider = document.getElementById("speedSlider");
     const speedLabel = document.getElementById("speedLabel");
@@ -196,6 +197,7 @@
       buzzed = false;
       readingDone = false;
       timerLocked = false;
+      buzzAllowed = true;
 
       document.getElementById("readerLine").innerHTML = "";
       document.getElementById("loading").classList.remove("hidden");
@@ -252,6 +254,7 @@
           if (!buzzed) {
             startTimer(5, "Buzz Timer", () => {
               if (!buzzed) {
+                buzzAllowed = false;
                 document.getElementById("buzzBtn").classList.add("hidden");
                 showAnswer();
                 timerLocked = true;
@@ -268,7 +271,13 @@
     }
 
     function buzz() {
-      if (readingDone || wordIndex < 1 || timerLocked) return;
+      if (timerLocked || wordIndex < 1) return;
+
+      if (!buzzAllowed) {
+        alert("⏰ Too late to buzz!");
+        return;
+      }
+
       buzzed = true;
       clearInterval(interval);
       clearInterval(countdownInterval);
@@ -292,6 +301,7 @@
         timerDiv.textContent = `⏱ ${label}: ${seconds}`;
         if (seconds <= 0) {
           clearInterval(countdownInterval);
+          buzzAllowed = false;
           callback();
         }
       }, 1000);
