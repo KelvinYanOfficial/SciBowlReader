@@ -104,6 +104,7 @@
     <input type="range" id="speedSlider" min="1" max="10" value="7" />
     <span id="speedLabel">Speed: 7 (Recommended: 5–8)</span>
   </div>
+
   <div class="main">
     <h1>🔬 SciBowl QBReader</h1>
     <button onclick="loadQuestion()">Load Question</button>
@@ -182,7 +183,6 @@
         questionData = data.questions[0];
         if (!questionData) return alert("No question found.");
 
-        // Show question type
         const qtype = questionData.question_type || (questionData.tossup_question.match(/[WXYZ]\)/) ? "Multiple Choice" : "Short Answer");
         const typeDiv = document.getElementById("questionType");
         typeDiv.textContent = `📝 Type: ${qtype}`;
@@ -279,6 +279,7 @@
 
     function startBonus() {
       document.getElementById("showBonusBtn").classList.add("hidden");
+      document.getElementById("answer").classList.add("hidden");
       startReadingBonus(questionData.bonus_question);
     }
 
