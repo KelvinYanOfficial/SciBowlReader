@@ -122,7 +122,7 @@
     <div id="bonusAnswer" class="hidden"></div>
     <div id="bonusInputDiv" class="hidden">
       <input type="text" id="userBonusAnswer" placeholder="Your bonus answer..." />
-      <button onclick="submitBonusAnswer()">Submit</button> <!-- ✅ Added this -->
+      <button onclick="submitBonusAnswer()">Submit</button> <!-- ✅ Bonus Submit Button -->
     </div>
   </div>
 
@@ -240,6 +240,7 @@
             });
           }
           if (!bonusBuzzed && bonus) {
+            document.getElementById("buzzBtn").classList.remove("hidden"); // ✅ allow buzz after reading
             startTimer(20, "Bonus Timer", () => {
               if (!bonusBuzzed) {
                 bonusTimerLocked = true;
