@@ -317,6 +317,10 @@
       const isMC = questionData.question_type === "Multiple Choice";
 
       const result = await gradeAnswer(user, correct, isMC);
+
+      if (countdownId) clearInterval(countdownId);  // ✅ stops timer immediately
+      countdownId = null;
+
       document.getElementById("answer").innerHTML = `${result === "correct" ? "✅ Correct!" : "❌ Incorrect."}<br><b>Answer:</b> ${correct}`;
       document.getElementById("answer").classList.remove("hidden");
       document.getElementById("answerInputDiv").classList.add("hidden");
