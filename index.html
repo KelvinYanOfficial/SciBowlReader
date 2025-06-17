@@ -131,6 +131,7 @@
     let wordIndex = 0, interval = null, paused = false;
     let readingDone = false, buzzed = false, timerLocked = false;
     let questionData = null;
+    let countdownRef = null; // ✅ new global countdown ref
 
     const slider = document.getElementById("speedSlider");
     const speedLabel = document.getElementById("speedLabel");
@@ -156,6 +157,9 @@
 
     async function loadQuestion() {
       clearInterval(interval);
+      clearInterval(countdownRef);
+      document.getElementById("buzzerTimer").textContent = "";
+
       wordIndex = 0;
       buzzed = false;
       readingDone = false;
@@ -232,6 +236,8 @@
       if (readingDone || wordIndex < 1 || timerLocked) return;
       buzzed = true;
       clearInterval(interval);
+      clearInterval(countdownRef);
+      document.getElementById("buzzerTimer").textContent = "";
       document.getElementById("buzzBtn").classList.add("hidden");
       document.getElementById("answerInputDiv").classList.remove("hidden");
       startTimer(10, "Answer Timer", () => {
@@ -245,12 +251,14 @@
 
     function startTimer(seconds, label, callback) {
       const timerDiv = document.getElementById("buzzerTimer");
+      clearInterval(countdownRef);
       timerDiv.textContent = `⏱ ${label}: ${seconds}`;
-      const countdown = setInterval(() => {
+      countdownRef = setInterval(() => {
         seconds--;
         timerDiv.textContent = `⏱ ${label}: ${seconds}`;
         if (seconds <= 0) {
-          clearInterval(countdown);
+          clearInterval(countdownRef);
+          timerDiv.textContent = "";
           callback();
         }
       }, 1000);
@@ -277,19 +285,21 @@
     }
 
     function startBonus() {
-      document.getElementById("showBonusBtn").classList.add("hidden");
+      clearInterval(interval);
+      clearInterval(countdownRef);
+      document.getElementById("readerLine").textContent = "";
+      document.getElementById("buzzerTimer").textContent = "";
       document.getElementById("answer").classList.add("hidden");
       document.getElementById("answerInputDiv").classList.add("hidden");
-      document.getElementById("buzzerTimer").textContent = ""; // ✅ clear tossup timer
+      document.getElementById("showBonusBtn").classList.add("hidden");
+      buzzed = false;
+      timerLocked = false;
+      wordIndex = 0;
+      readingDone = false;
       startReadingBonus(questionData.bonus_question);
     }
 
     function startReadingBonus(text) {
-      wordIndex = 0;
-      readingDone = false;
-      buzzed = false;
-      timerLocked = false;
-      document.getElementById("readerLine").innerHTML = "";
       const words = text.split(/\s+/);
       const reader = document.getElementById("readerLine");
       const speed = 1100 - parseInt(slider.value) * 100;
