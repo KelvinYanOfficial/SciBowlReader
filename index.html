@@ -152,7 +152,7 @@
 
     <div id="answer" class="hidden"></div>
     <div id="answerInputDiv" class="hidden">
-      <input type="text" id="userAnswer" placeholder="Your answer..." />
+      <input type="text" id="userAnswer" placeholder="Your answer..." autocomplete="off"/>
       <button onclick="submitAnswer()">Submit Answer</button>
     </div>
   </div>
@@ -165,6 +165,7 @@
     let buzzed = false;
     let questionData = null;
     let timerLocked = false;
+    let countdownInterval = null;
 
     const slider = document.getElementById("speedSlider");
     const speedLabel = document.getElementById("speedLabel");
@@ -190,6 +191,7 @@
 
     async function loadQuestion() {
       clearInterval(interval);
+      clearInterval(countdownInterval);
       wordIndex = 0;
       buzzed = false;
       readingDone = false;
@@ -269,6 +271,7 @@
       if (readingDone || wordIndex < 1 || timerLocked) return;
       buzzed = true;
       clearInterval(interval);
+      clearInterval(countdownInterval);
       document.getElementById("buzzBtn").classList.add("hidden");
       document.getElementById("answerInputDiv").classList.remove("hidden");
       startTimer(10, "Answer Timer", () => {
@@ -283,11 +286,12 @@
     function startTimer(seconds, label, callback) {
       const timerDiv = document.getElementById("buzzerTimer");
       timerDiv.textContent = `⏱ ${label}: ${seconds}`;
-      const countdown = setInterval(() => {
+      clearInterval(countdownInterval);
+      countdownInterval = setInterval(() => {
         seconds--;
         timerDiv.textContent = `⏱ ${label}: ${seconds}`;
         if (seconds <= 0) {
-          clearInterval(countdown);
+          clearInterval(countdownInterval);
           callback();
         }
       }, 1000);
@@ -304,6 +308,8 @@
       document.getElementById("answer").innerHTML = `${result}<br><b>Answer:</b> ${questionData.tossup_answer}`;
       document.getElementById("answer").classList.remove("hidden");
       document.getElementById("answerInputDiv").classList.add("hidden");
+
+      clearInterval(countdownInterval);
       timerLocked = true;
     }
 
