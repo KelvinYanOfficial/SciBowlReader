@@ -6,8 +6,7 @@
   <title>SciBowl QBReader</title>
   <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
   <script id="MathJax-script" async
-    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
-  </script>
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
   <style>
     body {
       margin: 0;
@@ -37,11 +36,6 @@
       white-space: pre-wrap;
     }
 
-    #loading, #buzzerTimer, #answer, #bonusAnswer {
-      margin-top: 15px;
-      font-weight: bold;
-    }
-
     button {
       margin: 5px 0;
       padding: 8px 14px;
@@ -55,6 +49,12 @@
 
     button:hover {
       background: #005fa3;
+    }
+
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      opacity: 0.5;
     }
 
     .hidden {
@@ -77,24 +77,46 @@
       font-size: 14px;
       font-weight: bold;
     }
-
-    button:disabled {
-      background: #ccc;
-      cursor: not-allowed;
-      opacity: 0.5;
-    }
   </style>
 </head>
 <body>
   <div class="sidebar">
-    <!-- same as before -->
+    <h2>⚙️ Filters</h2>
+    <div class="section-title">Categories</div>
+    <label><input type="checkbox" id="selectAllCats"> Select All</label>
+    <div id="categoryList">
+      <label><input type="checkbox" value="PHYSICS"> Physics</label>
+      <label><input type="checkbox" value="CHEMISTRY"> Chemistry</label>
+      <label><input type="checkbox" value="BIOLOGY"> Biology</label>
+      <label><input type="checkbox" value="EARTH AND SPACE"> Earth and Space</label>
+      <label><input type="checkbox" value="ENERGY"> Energy</label>
+      <label><input type="checkbox" value="MATH"> Math</label>
+      <label><input type="checkbox" value="GENERAL SCIENCE"> General Science</label>
+      <label><input type="checkbox" value="ASTRONOMY"> Astronomy</label>
+      <label><input type="checkbox" value="COMPUTER SCIENCE"> Computer Science</label>
+    </div>
+
+    <div class="section-title">Difficulty</div>
+    <div id="difficultyList">
+      <label><input type="checkbox" value="middle_school"> Middle School</label>
+      <label><input type="checkbox" value="high_school"> High School</label>
+    </div>
+
+    <div class="section-title">Bonus Mode</div>
+    <label><input type="radio" name="bonusMode" value="auto" checked> Always</label>
+    <label><input type="radio" name="bonusMode" value="tossup"> If Tossup Correct</label>
+    <label><input type="radio" name="bonusMode" value="never"> Never</label>
+
+    <div class="section-title">Reading Speed</div>
+    <input type="range" id="speedSlider" min="1" max="10" value="7" />
+    <span id="speedLabel">Speed: 7 (Recommended: 5–8)</span>
   </div>
 
   <div class="main">
     <h1>🔬 SciBowl QBReader</h1>
     <button onclick="loadQuestion()">Load Question</button>
     <button id="pauseBtn" onclick="togglePause()" class="hidden">Pause</button>
-    <button id="buzzBtn" onclick="buzz()" class="hidden">Buzz!</button>
+    <button id="buzzBtn" onclick="buzz()" class="hidden" disabled>Buzz!</button>
     <button id="showBonusBtn" onclick="startBonus()" class="hidden">Show Bonus</button>
 
     <div id="questionType" style="margin-top:10px; font-weight:bold;"></div>
@@ -119,7 +141,6 @@
     let questionData = null;
     let wordIndex = 0;
     let interval = null;
-    let countdownTimer = null;
     let paused = false;
     let buzzed = false;
     let bonusBuzzed = false;
@@ -129,14 +150,12 @@
     let bonusShown = false;
     let isBonus = false;
 
-    function setBuzzEnabled(enabled) {
-      const buzzBtn = document.getElementById("buzzBtn");
-      buzzBtn.disabled = !enabled;
-    }
+    document.getElementById("speedSlider").addEventListener("input", e => {
+      document.getElementById("speedLabel").textContent = `Speed: ${e.target.value} (Recommended: 5–8)`;
+    });
 
-    const speedSlider = document.getElementById("speedSlider");
-    speedSlider.addEventListener("input", () => {
-      document.getElementById("speedLabel").textContent = `Speed: ${speedSlider.value} (Recommended: 5–8)`;
+    document.getElementById("selectAllCats").addEventListener("change", function () {
+      document.querySelectorAll("#categoryList input[type='checkbox']").forEach(cb => cb.checked = this.checked);
     });
 
     document.addEventListener("keydown", e => {
@@ -146,21 +165,16 @@
       }
     });
 
-    document.getElementById("selectAllCats").addEventListener("change", function () {
-      document.querySelectorAll("#categoryList input[type='checkbox']").forEach(cb => cb.checked = this.checked);
-    });
-
     function getChecked(id) {
       return [...document.querySelectorAll(`#${id} input:checked`)].map(el => el.value);
     }
 
     function getQuestionType(text) {
-      return /multiple\s*choice/i.test(text.slice(0, 60)) ? "Multiple Choice" : "Short Answer";
+      return text.trim().toLowerCase().startsWith("multiple choice") ? "Multiple Choice" : "Short Answer";
     }
 
     async function loadQuestion() {
       clearInterval(interval);
-      clearInterval(countdownTimer);
       document.getElementById("readerLine").innerHTML = "";
       document.getElementById("loading").classList.remove("hidden");
       document.getElementById("answer").classList.add("hidden");
@@ -168,11 +182,10 @@
       document.getElementById("bonusInputDiv").classList.add("hidden");
       document.getElementById("answerInputDiv").classList.add("hidden");
       document.getElementById("buzzBtn").classList.remove("hidden");
+      document.getElementById("buzzBtn").disabled = true;
       document.getElementById("buzzerTimer").textContent = "";
       document.getElementById("showBonusBtn").classList.add("hidden");
       document.getElementById("questionType").textContent = "";
-
-      setBuzzEnabled(false);
 
       buzzed = false;
       bonusBuzzed = false;
@@ -200,7 +213,6 @@
         questionData.question_type = getQuestionType(questionData.tossup_question);
         questionData.bonus_type = getQuestionType(questionData.bonus_question);
         document.getElementById("questionType").textContent = `Type: ${questionData.question_type}`;
-
         document.getElementById("loading").classList.add("hidden");
         startReading(questionData.tossup_question, false);
       } catch (err) {
@@ -215,7 +227,7 @@
       readingDone = false;
       isBonus = bonus;
       const reader = document.getElementById("readerLine");
-      const speed = 1100 - parseInt(speedSlider.value) * 100;
+      const speed = 1100 - parseInt(document.getElementById("speedSlider").value) * 100;
       reader.innerHTML = "";
 
       interval = setInterval(() => {
@@ -225,8 +237,8 @@
         if (wordIndex >= words.length) {
           clearInterval(interval);
           readingDone = true;
+          document.getElementById("buzzBtn").disabled = false;
           MathJax.typesetPromise([reader]);
-          setBuzzEnabled(true);
           if (!buzzed && !bonus) {
             startTimer(5, "Buzz Timer", () => {
               if (!buzzed) {
@@ -235,9 +247,6 @@
                 showBonusIfNeeded();
               }
             });
-          }
-          if (!bonusBuzzed && bonus) {
-            document.getElementById("buzzBtn").classList.remove("hidden");
           }
         }
       }, speed);
@@ -249,19 +258,18 @@
     }
 
     function buzz() {
-      if (timerLocked || bonusTimerLocked || !readingDone) return;
+      if (!readingDone || timerLocked || bonusTimerLocked) return;
       if (isBonus && bonusBuzzed) return;
       if (!isBonus && buzzed) return;
 
       clearInterval(interval);
-      clearInterval(countdownTimer);
       document.getElementById("buzzBtn").classList.add("hidden");
       document.getElementById("buzzerTimer").textContent = "";
 
       if (isBonus) {
         bonusBuzzed = true;
         document.getElementById("bonusInputDiv").classList.remove("hidden");
-        startTimer(20, "Bonus Answer Timer", () => {
+        startTimer(20, "Bonus Timer", () => {
           document.getElementById("bonusInputDiv").classList.add("hidden");
           showAnswer(true);
           bonusTimerLocked = true;
@@ -279,14 +287,13 @@
     }
 
     function startTimer(seconds, label, callback) {
-      clearInterval(countdownTimer);
       const timerDiv = document.getElementById("buzzerTimer");
       timerDiv.textContent = `⏱ ${label}: ${seconds}`;
-      countdownTimer = setInterval(() => {
+      const countdown = setInterval(() => {
         seconds--;
         timerDiv.textContent = `⏱ ${label}: ${seconds}`;
         if (seconds <= 0) {
-          clearInterval(countdownTimer);
+          clearInterval(countdown);
           callback();
         }
       }, 1000);
@@ -296,35 +303,31 @@
       const user = document.getElementById("userAnswer").value.trim();
       const correct = questionData.tossup_answer;
       const isMC = questionData.question_type === "Multiple Choice";
-
-      const result = await gradeAnswer(user, correct, isMC);
-      document.getElementById("answer").innerHTML = `${result === "correct" ? "✅ Correct!" : "❌ Incorrect."}<br><b>Answer:</b> ${correct}`;
+      const res = await fetch("/api/grade", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userAnswer: user, correctAnswer: correct, isMultipleChoice: isMC })
+      });
+      const data = await res.json();
+      document.getElementById("answer").innerHTML = `${data.result === "correct" ? "✅ Correct!" : "❌ Incorrect."}<br><b>Answer:</b> ${correct}`;
       document.getElementById("answer").classList.remove("hidden");
       document.getElementById("answerInputDiv").classList.add("hidden");
-      timerLocked = true;
-      showBonusIfNeeded(result === "correct");
+      showBonusIfNeeded(data.result === "correct");
     }
 
     async function submitBonusAnswer() {
       const user = document.getElementById("userBonusAnswer").value.trim();
       const correct = questionData.bonus_answer;
       const isMC = questionData.bonus_type === "Multiple Choice";
-
-      const result = await gradeAnswer(user, correct, isMC);
-      document.getElementById("bonusAnswer").innerHTML = `${result === "correct" ? "✅ Correct!" : "❌ Incorrect."}<br><b>Answer:</b> ${correct}`;
-      document.getElementById("bonusAnswer").classList.remove("hidden");
-      document.getElementById("bonusInputDiv").classList.add("hidden");
-      bonusTimerLocked = true;
-    }
-
-    async function gradeAnswer(userAnswer, correctAnswer, isMC) {
       const res = await fetch("/api/grade", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userAnswer, correctAnswer, isMultipleChoice: isMC })
+        body: JSON.stringify({ userAnswer: user, correctAnswer: correct, isMultipleChoice: isMC })
       });
       const data = await res.json();
-      return data.result;
+      document.getElementById("bonusAnswer").innerHTML = `${data.result === "correct" ? "✅ Correct!" : "❌ Incorrect."}<br><b>Answer:</b> ${correct}`;
+      document.getElementById("bonusAnswer").classList.remove("hidden");
+      document.getElementById("bonusInputDiv").classList.add("hidden");
     }
 
     function showAnswer(bonus = false) {
@@ -339,13 +342,11 @@
       if (mode === "never") return;
       if (mode === "tossup" && !correct) return;
       if (bonusShown) return;
-
       bonusShown = true;
       document.getElementById("showBonusBtn").classList.remove("hidden");
     }
 
     function startBonus() {
-      clearInterval(countdownTimer);
       document.getElementById("showBonusBtn").classList.add("hidden");
       document.getElementById("answer").classList.add("hidden");
       document.getElementById("answerInputDiv").classList.add("hidden");
@@ -359,8 +360,8 @@
       buzzed = false;
       isBonus = true;
 
-      setBuzzEnabled(false);
       document.getElementById("buzzBtn").classList.remove("hidden");
+      document.getElementById("buzzBtn").disabled = true;
       document.getElementById("questionType").textContent = `Type: ${questionData.bonus_type}`;
       startReading(questionData.bonus_question, true);
     }
