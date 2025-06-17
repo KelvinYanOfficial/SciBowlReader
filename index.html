@@ -128,6 +128,7 @@
     let questionData = null;
     let countdownRef = null;
     let isBonus = false;
+    let bonusShown = false;
 
     const slider = document.getElementById("speedSlider");
     const speedLabel = document.getElementById("speedLabel");
@@ -159,6 +160,7 @@
       readingDone = false;
       timerLocked = false;
       isBonus = false;
+      bonusShown = false;
 
       document.getElementById("buzzerTimer").textContent = "";
       document.getElementById("readerLine").textContent = "";
@@ -216,7 +218,6 @@
           readingDone = true;
           MathJax.typesetPromise([reader]);
 
-          // Do not hide buzz button — allow post-reading buzz
           startTimer(5, "Answer Timer", () => {
             if (!buzzed) {
               document.getElementById("buzzBtn").classList.add("hidden");
@@ -229,17 +230,13 @@
       }, speed);
     }
 
-    function togglePause() {
-      paused = !paused;
-      document.getElementById("pauseBtn").textContent = paused ? "Resume" : "Pause";
-    }
-
     function buzz() {
       if (timerLocked || wordIndex < 1) return;
       buzzed = true;
       clearInterval(interval);
       clearInterval(countdownRef);
       document.getElementById("buzzBtn").classList.add("hidden");
+
       const inputDiv = isBonus ? "bonusInputDiv" : "answerInputDiv";
       document.getElementById(inputDiv).classList.remove("hidden");
 
@@ -293,6 +290,7 @@
     }
 
     function maybeShowBonus(correct) {
+      if (bonusShown) return;
       const mode = document.querySelector("input[name='bonusMode']:checked").value;
       if (mode === "never") return;
       if (mode === "auto" || (mode === "tossup" && correct)) {
@@ -308,6 +306,7 @@
       readingDone = false;
       timerLocked = false;
       isBonus = true;
+      bonusShown = true;
 
       document.getElementById("readerLine").textContent = "";
       document.getElementById("buzzerTimer").textContent = "";
