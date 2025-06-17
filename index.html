@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="="en">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -29,13 +29,14 @@
     h1 {
       margin-top: 0;
     }
-    #readerLine {
+    #readerLine, #questionType {
       font-size: 1.1em;
       margin-top: 15px;
       min-height: 60px;
       white-space: pre-wrap;
+      font-weight: bold;
     }
-    #loading, #buzzerTimer, #answer, #bonusAnswer, #questionType {
+    #loading, #buzzerTimer, #answer, #bonusAnswer {
       margin-top: 15px;
       font-weight: bold;
     }
@@ -109,6 +110,7 @@
     <button id="pauseBtn" onclick="togglePause()" class="hidden">Pause</button>
     <button id="buzzBtn" onclick="buzz()" class="hidden">Buzz!</button>
     <button id="showBonusBtn" onclick="startBonus()" class="hidden">Show Bonus</button>
+
     <div id="loading" class="hidden">Loading question...</div>
     <div id="questionType" class="hidden"></div>
     <div id="readerLine"></div>
@@ -124,6 +126,7 @@
       <button onclick="submitBonusAnswer()">Submit Bonus</button>
     </div>
   </div>
+
   <script>
     let wordIndex = 0, interval = null, paused = false;
     let readingDone = false, buzzed = false, timerLocked = false;
@@ -159,9 +162,7 @@
       timerLocked = false;
 
       ["readerLine", "buzzerTimer", "answer", "bonusAnswer"].forEach(id => document.getElementById(id).innerHTML = "");
-      ["loading", "buzzBtn"].forEach(id => document.getElementById(id).classList.remove("hidden"));
       ["answer", "answerInputDiv", "bonusInputDiv", "bonusAnswer", "showBonusBtn", "questionType"].forEach(id => document.getElementById(id).classList.add("hidden"));
-
       document.getElementById("loading").classList.remove("hidden");
 
       const payload = {};
@@ -179,14 +180,16 @@
 
         const data = await res.json();
         questionData = data.questions[0];
-        if (!questionData) {
-          alert("No question found.");
-          return;
-        }
+        if (!questionData) return alert("No question found.");
+
+        // Show question type
+        const qtype = questionData.question_type || (questionData.tossup_question.match(/[WXYZ]\)/) ? "Multiple Choice" : "Short Answer");
+        const typeDiv = document.getElementById("questionType");
+        typeDiv.textContent = `📝 Type: ${qtype}`;
+        typeDiv.classList.remove("hidden");
 
         document.getElementById("loading").classList.add("hidden");
-        document.getElementById("questionType").textContent = `📝 Type: ${questionData.question_type || "Unknown"}`;
-        document.getElementById("questionType").classList.remove("hidden");
+        document.getElementById("buzzBtn").classList.remove("hidden");
 
         startReading(questionData.tossup_question);
       } catch (err) {
@@ -195,13 +198,11 @@
       }
     }
 
-    function startReading(text, isBonus = false) {
-      wordIndex = 0;
-      paused = false;
+    function startReading(text) {
       const words = text.split(/\s+/);
       const reader = document.getElementById("readerLine");
-      reader.innerHTML = "";
       const speed = 1100 - parseInt(slider.value) * 100;
+
       interval = setInterval(() => {
         if (!paused && wordIndex < words.length) {
           reader.innerHTML += words[wordIndex++] + " ";
@@ -210,21 +211,17 @@
           clearInterval(interval);
           readingDone = true;
           MathJax.typesetPromise([reader]);
-          if (!isBonus) {
+          if (!buzzed) {
             startTimer(5, "Buzz Timer", () => {
               if (!buzzed) {
                 document.getElementById("buzzBtn").classList.add("hidden");
                 showAnswer();
-                if (getBonusMode() === "auto") showBonusBtn();
+                timerLocked = true;
               }
             });
           }
         }
       }, speed);
-    }
-
-    function getBonusMode() {
-      return document.querySelector("input[name='bonusMode']:checked").value;
     }
 
     function togglePause() {
@@ -233,20 +230,18 @@
     }
 
     function buzz() {
-      if (timerLocked || buzzed) return;
+      if (readingDone || wordIndex < 1 || timerLocked) return;
       buzzed = true;
       clearInterval(interval);
       document.getElementById("buzzBtn").classList.add("hidden");
-      if (!readingDone) clearInterval(interval);
-      if (questionData.bonus_question && !readingDone) {
-        startTimer(10, "Answer Timer", () => {
-          if (!timerLocked) {
-            document.getElementById("answerInputDiv").classList.add("hidden");
-            showAnswer();
-          }
-        });
-      }
       document.getElementById("answerInputDiv").classList.remove("hidden");
+      startTimer(10, "Answer Timer", () => {
+        if (!timerLocked) {
+          document.getElementById("answerInputDiv").classList.add("hidden");
+          showAnswer();
+          timerLocked = true;
+        }
+      });
     }
 
     function startTimer(seconds, label, callback) {
@@ -263,57 +258,78 @@
     }
 
     function submitAnswer() {
-      timerLocked = true;
+      if (timerLocked) return;
       const user = document.getElementById("userAnswer").value.trim().toLowerCase();
       const correct = questionData.tossup_answer.trim().toLowerCase();
       const isCorrect = user && correct.includes(user);
-      document.getElementById("answer").innerHTML = `${isCorrect ? "✅ Correct!" : "❌ Incorrect."}<br><b>Answer:</b> ${questionData.tossup_answer}`;
+      const result = isCorrect ? "✅ Correct!" : "❌ Incorrect.";
+      document.getElementById("answer").innerHTML = `${result}<br><b>Answer:</b> ${questionData.tossup_answer}`;
       document.getElementById("answer").classList.remove("hidden");
       document.getElementById("answerInputDiv").classList.add("hidden");
-      if (getBonusMode() === "auto" || (getBonusMode() === "tossup" && isCorrect)) {
-        showBonusBtn();
+      timerLocked = true;
+      if (isCorrect || document.querySelector("input[name='bonusMode']:checked").value === "auto") {
+        document.getElementById("showBonusBtn").classList.remove("hidden");
       }
     }
 
     function showAnswer() {
-      timerLocked = true;
       document.getElementById("answer").innerHTML = `<b>Answer:</b> ${questionData.tossup_answer}`;
       document.getElementById("answer").classList.remove("hidden");
     }
 
-    function showBonusBtn() {
-      document.getElementById("showBonusBtn").classList.remove("hidden");
+    function startBonus() {
+      document.getElementById("showBonusBtn").classList.add("hidden");
+      startReadingBonus(questionData.bonus_question);
     }
 
-    function startBonus() {
+    function startReadingBonus(text) {
+      wordIndex = 0;
+      readingDone = false;
       buzzed = false;
       timerLocked = false;
-      readingDone = false;
-      document.getElementById("showBonusBtn").classList.add("hidden");
-      document.getElementById("userBonusAnswer").value = "";
-      document.getElementById("bonusAnswer").classList.add("hidden");
-      document.getElementById("bonusInputDiv").classList.add("hidden");
-      document.getElementById("buzzBtn").classList.remove("hidden");
-      startReading(questionData.bonus_question, true);
-      startTimer(20, "Bonus Timer", () => {
-        if (!buzzed) {
-          document.getElementById("buzzBtn").classList.add("hidden");
-          document.getElementById("bonusAnswer").innerHTML = `<b>Answer:</b> ${questionData.bonus_answer}`;
-          document.getElementById("bonusAnswer").classList.remove("hidden");
+      document.getElementById("readerLine").innerHTML = "";
+      const words = text.split(/\s+/);
+      const reader = document.getElementById("readerLine");
+      const speed = 1100 - parseInt(slider.value) * 100;
+
+      interval = setInterval(() => {
+        if (!paused && wordIndex < words.length) {
+          reader.innerHTML += words[wordIndex++] + " ";
         }
-      });
+        if (wordIndex >= words.length) {
+          clearInterval(interval);
+          readingDone = true;
+          MathJax.typesetPromise([reader]);
+          if (!buzzed) {
+            startTimer(20, "Bonus Timer", () => {
+              if (!buzzed) {
+                showBonusAnswer();
+                timerLocked = true;
+              }
+            });
+          }
+        }
+      }, speed);
+
+      document.getElementById("buzzBtn").classList.remove("hidden");
     }
 
     function submitBonusAnswer() {
-      timerLocked = true;
+      if (timerLocked) return;
       const user = document.getElementById("userBonusAnswer").value.trim().toLowerCase();
       const correct = questionData.bonus_answer.trim().toLowerCase();
       const isCorrect = user && correct.includes(user);
-      document.getElementById("bonusAnswer").innerHTML = `${isCorrect ? "✅ Correct!" : "❌ Incorrect."}<br><b>Answer:</b> ${questionData.bonus_answer}`;
+      const result = isCorrect ? "✅ Correct!" : "❌ Incorrect.";
+      document.getElementById("bonusAnswer").innerHTML = `${result}<br><b>Bonus Answer:</b> ${questionData.bonus_answer}`;
       document.getElementById("bonusAnswer").classList.remove("hidden");
       document.getElementById("bonusInputDiv").classList.add("hidden");
+      timerLocked = true;
     }
 
+    function showBonusAnswer() {
+      document.getElementById("bonusAnswer").innerHTML = `<b>Bonus Answer:</b> ${questionData.bonus_answer}`;
+      document.getElementById("bonusAnswer").classList.remove("hidden");
+    }
   </script>
 </body>
 </html>
