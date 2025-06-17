@@ -125,8 +125,10 @@
     </div>
 
     <div class="section-title">Difficulty</div>
-    <label><input type="checkbox" value="middle_school"> Middle School</label>
-    <label><input type="checkbox" value="high_school"> High School</label>
+    <div id="difficultyList">
+      <label><input type="checkbox" value="middle_school"> Middle School</label>
+      <label><input type="checkbox" value="high_school"> High School</label>
+    </div>
 
     <div class="section-title">Bonus Mode</div>
     <label><input type="radio" name="bonusMode" value="auto" checked> Always</label>
@@ -162,6 +164,7 @@
     let readingDone = false;
     let buzzed = false;
     let questionData = null;
+    let timerLocked = false;
 
     const slider = document.getElementById("speedSlider");
     const speedLabel = document.getElementById("speedLabel");
@@ -190,6 +193,7 @@
       wordIndex = 0;
       buzzed = false;
       readingDone = false;
+      timerLocked = false;
 
       document.getElementById("readerLine").innerHTML = "";
       document.getElementById("loading").classList.remove("hidden");
@@ -197,31 +201,37 @@
       document.getElementById("answerInputDiv").classList.add("hidden");
       document.getElementById("buzzBtn").classList.add("hidden");
       document.getElementById("buzzerTimer").textContent = "";
+      document.getElementById("userAnswer").value = "";
 
       let payload = {};
       let categories = getChecked("categoryList");
-      let difficulties = getChecked("body");
+      let difficulties = getChecked("difficultyList");
 
       if (categories.length) payload.categories = categories;
       if (difficulties.length) payload.difficulties = difficulties;
 
-      const res = await fetch("https://sci-bowl-proxy.onrender.com/api/random", {
-        method: Object.keys(payload).length ? "POST" : "GET",
-        headers: { "Content-Type": "application/json" },
-        body: Object.keys(payload).length ? JSON.stringify(payload) : null
-      });
+      try {
+        const res = await fetch("https://sci-bowl-proxy.onrender.com/api/random", {
+          method: Object.keys(payload).length ? "POST" : "GET",
+          headers: { "Content-Type": "application/json" },
+          body: Object.keys(payload).length ? JSON.stringify(payload) : null
+        });
 
-      const data = await res.json();
-      if (!data.questions || !data.questions[0]) {
-        alert("No questions found.");
-        return;
+        const data = await res.json();
+        if (!data.questions || !data.questions[0]) {
+          alert("No questions found.");
+          return;
+        }
+
+        questionData = data.questions[0];
+        document.getElementById("loading").classList.add("hidden");
+        document.getElementById("buzzBtn").classList.remove("hidden");
+
+        startReading(questionData.tossup_question);
+      } catch (err) {
+        document.getElementById("readerLine").innerHTML = `<p style="color:red;">⚠️ Failed to load question.</p>`;
+        console.error(err);
       }
-
-      questionData = data.questions[0];
-      document.getElementById("loading").classList.add("hidden");
-      document.getElementById("buzzBtn").classList.remove("hidden");
-
-      startReading(questionData.tossup_question);
     }
 
     function startReading(text) {
@@ -237,10 +247,15 @@
           clearInterval(interval);
           readingDone = true;
           MathJax.typesetPromise([reader]);
-          startTimer(5, "Buzz Timer", () => {
-            document.getElementById("buzzBtn").classList.add("hidden");
-            showAnswer();
-          });
+          if (!buzzed) {
+            startTimer(5, "Buzz Timer", () => {
+              if (!buzzed) {
+                document.getElementById("buzzBtn").classList.add("hidden");
+                showAnswer();
+                timerLocked = true;
+              }
+            });
+          }
         }
       }, speed);
     }
@@ -251,14 +266,17 @@
     }
 
     function buzz() {
-      if (readingDone || wordIndex < 1) return;
+      if (readingDone || wordIndex < 1 || timerLocked) return;
       buzzed = true;
       clearInterval(interval);
       document.getElementById("buzzBtn").classList.add("hidden");
       document.getElementById("answerInputDiv").classList.remove("hidden");
       startTimer(10, "Answer Timer", () => {
-        document.getElementById("answerInputDiv").classList.add("hidden");
-        showAnswer();
+        if (!timerLocked) {
+          document.getElementById("answerInputDiv").classList.add("hidden");
+          showAnswer();
+          timerLocked = true;
+        }
       });
     }
 
@@ -276,6 +294,8 @@
     }
 
     function submitAnswer() {
+      if (timerLocked) return;
+
       const user = document.getElementById("userAnswer").value.trim().toLowerCase();
       const correct = questionData.tossup_answer.trim().toLowerCase();
       const isCorrect = user && correct.includes(user);
@@ -284,11 +304,7 @@
       document.getElementById("answer").innerHTML = `${result}<br><b>Answer:</b> ${questionData.tossup_answer}`;
       document.getElementById("answer").classList.remove("hidden");
       document.getElementById("answerInputDiv").classList.add("hidden");
-
-      if (!isCorrect) {
-        document.getElementById("buzzBtn").classList.add("hidden");
-        showAnswer();
-      }
+      timerLocked = true;
     }
 
     function showAnswer() {
