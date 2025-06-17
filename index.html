@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>SciBowl QBReader</title>
   <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <script id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+  </script>
   <style>
     body {
       margin: 0;
@@ -25,17 +27,13 @@
       padding: 20px;
       overflow-y: auto;
     }
-    h1 {
-      margin-top: 0;
-    }
-    #readerLine, #questionType {
+    #readerLine {
       font-size: 1.1em;
       margin-top: 15px;
       min-height: 60px;
       white-space: pre-wrap;
-      font-weight: bold;
     }
-    #loading, #buzzerTimer, #answer, #bonusAnswer {
+    #loading, #buzzerTimer, #answer, #bonusAnswer, #questionType {
       margin-top: 15px;
       font-weight: bold;
     }
@@ -55,11 +53,10 @@
     button:hover {
       background: #005fa3;
     }
-    input[type=range] {
+    input[type=range], input[type=text] {
       width: 100%;
     }
     input[type="text"] {
-      width: 100%;
       padding: 6px;
       margin-top: 5px;
     }
@@ -103,14 +100,12 @@
     <input type="range" id="speedSlider" min="1" max="10" value="7" />
     <span id="speedLabel">Speed: 7 (Recommended: 5–8)</span>
   </div>
-
   <div class="main">
     <h1>🔬 SciBowl QBReader</h1>
     <button onclick="loadQuestion()">Load Question</button>
     <button id="pauseBtn" onclick="togglePause()" class="hidden">Pause</button>
     <button id="buzzBtn" onclick="buzz()" class="hidden">Buzz!</button>
     <button id="showBonusBtn" onclick="startBonus()" class="hidden">Show Bonus</button>
-
     <div id="loading" class="hidden">Loading question...</div>
     <div id="questionType" class="hidden"></div>
     <div id="readerLine"></div>
@@ -158,16 +153,20 @@
     async function loadQuestion() {
       clearInterval(interval);
       clearInterval(countdownRef);
-      document.getElementById("buzzerTimer").textContent = "";
-      document.getElementById("buzzerTimer").classList.add("hidden");
-
       wordIndex = 0;
       buzzed = false;
       readingDone = false;
       timerLocked = false;
+      document.getElementById("buzzerTimer").textContent = "";
 
-      ["readerLine", "answer", "bonusAnswer"].forEach(id => document.getElementById(id).innerHTML = "");
-      ["answer", "answerInputDiv", "bonusInputDiv", "bonusAnswer", "showBonusBtn", "questionType"].forEach(id => document.getElementById(id).classList.add("hidden"));
+      document.getElementById("readerLine").textContent = "";
+      document.getElementById("answer").classList.add("hidden");
+      document.getElementById("answerInputDiv").classList.add("hidden");
+      document.getElementById("bonusInputDiv").classList.add("hidden");
+      document.getElementById("bonusAnswer").classList.add("hidden");
+      document.getElementById("showBonusBtn").classList.add("hidden");
+      document.getElementById("questionType").classList.add("hidden");
+
       document.getElementById("loading").classList.remove("hidden");
 
       const payload = {};
@@ -188,9 +187,8 @@
         if (!questionData) return alert("No question found.");
 
         const qtype = questionData.question_type || (questionData.tossup_question.match(/[WXYZ]\)/) ? "Multiple Choice" : "Short Answer");
-        const typeDiv = document.getElementById("questionType");
-        typeDiv.textContent = `📝 Type: ${qtype}`;
-        typeDiv.classList.remove("hidden");
+        document.getElementById("questionType").textContent = `📝 Type: ${qtype}`;
+        document.getElementById("questionType").classList.remove("hidden");
 
         document.getElementById("loading").classList.add("hidden");
         document.getElementById("buzzBtn").classList.remove("hidden");
@@ -215,15 +213,14 @@
           clearInterval(interval);
           readingDone = true;
           MathJax.typesetPromise([reader]);
-          if (!buzzed) {
-            startTimer(5, "Buzz Timer", () => {
-              if (!buzzed) {
-                document.getElementById("buzzBtn").classList.add("hidden");
-                showAnswer();
-                timerLocked = true;
-              }
-            });
-          }
+          startTimer(5, "Answer Timer", () => {
+            if (!buzzed) {
+              document.getElementById("buzzBtn").classList.add("hidden");
+              showAnswer();
+              timerLocked = true;
+              maybeShowBonus(false);
+            }
+          });
         }
       }, speed);
     }
@@ -234,12 +231,10 @@
     }
 
     function buzz() {
-      if (readingDone || wordIndex < 1 || timerLocked) return;
+      if (timerLocked || wordIndex < 1) return;
       buzzed = true;
       clearInterval(interval);
       clearInterval(countdownRef);
-      document.getElementById("buzzerTimer").textContent = "";
-      document.getElementById("buzzerTimer").classList.add("hidden");
       document.getElementById("buzzBtn").classList.add("hidden");
       document.getElementById("answerInputDiv").classList.remove("hidden");
       startTimer(10, "Answer Timer", () => {
@@ -247,22 +242,22 @@
           document.getElementById("answerInputDiv").classList.add("hidden");
           showAnswer();
           timerLocked = true;
+          maybeShowBonus(false);
         }
       });
     }
 
     function startTimer(seconds, label, callback) {
       const timerDiv = document.getElementById("buzzerTimer");
-      timerDiv.classList.remove("hidden");
-      timerDiv.textContent = `⏱ ${label}: ${seconds}`;
       clearInterval(countdownRef);
+      timerDiv.textContent = `⏱ ${label}: ${seconds}`;
+      timerDiv.classList.remove("hidden");
       countdownRef = setInterval(() => {
         seconds--;
         timerDiv.textContent = `⏱ ${label}: ${seconds}`;
         if (seconds <= 0) {
           clearInterval(countdownRef);
           timerDiv.textContent = "";
-          timerDiv.classList.add("hidden");
           callback();
         }
       }, 1000);
@@ -270,26 +265,32 @@
 
     function submitAnswer() {
       if (timerLocked) return;
-      clearInterval(countdownRef);
-      document.getElementById("buzzerTimer").textContent = "";
-      document.getElementById("buzzerTimer").classList.add("hidden");
-
       const user = document.getElementById("userAnswer").value.trim().toLowerCase();
       const correct = questionData.tossup_answer.trim().toLowerCase();
       const isCorrect = user && correct.includes(user);
+
       const result = isCorrect ? "✅ Correct!" : "❌ Incorrect.";
       document.getElementById("answer").innerHTML = `${result}<br><b>Answer:</b> ${questionData.tossup_answer}`;
       document.getElementById("answer").classList.remove("hidden");
       document.getElementById("answerInputDiv").classList.add("hidden");
       timerLocked = true;
-      if (isCorrect || document.querySelector("input[name='bonusMode']:checked").value === "auto") {
-        document.getElementById("showBonusBtn").classList.remove("hidden");
-      }
+      clearInterval(countdownRef);
+      document.getElementById("buzzerTimer").textContent = "";
+
+      maybeShowBonus(isCorrect);
     }
 
     function showAnswer() {
       document.getElementById("answer").innerHTML = `<b>Answer:</b> ${questionData.tossup_answer}`;
       document.getElementById("answer").classList.remove("hidden");
+    }
+
+    function maybeShowBonus(correct) {
+      const mode = document.querySelector("input[name='bonusMode']:checked").value;
+      if (mode === "never") return;
+      if (mode === "auto" || (mode === "tossup" && correct)) {
+        document.getElementById("showBonusBtn").classList.remove("hidden");
+      }
     }
 
     function startBonus() {
@@ -302,7 +303,6 @@
 
       document.getElementById("readerLine").textContent = "";
       document.getElementById("buzzerTimer").textContent = "";
-      document.getElementById("buzzerTimer").classList.add("hidden");
       document.getElementById("answer").classList.add("hidden");
       document.getElementById("answerInputDiv").classList.add("hidden");
       document.getElementById("showBonusBtn").classList.add("hidden");
@@ -323,35 +323,33 @@
           clearInterval(interval);
           readingDone = true;
           MathJax.typesetPromise([reader]);
-          if (!buzzed) {
-            startTimer(20, "Bonus Timer", () => {
-              if (!buzzed) {
-                showBonusAnswer();
-                timerLocked = true;
-              }
-            });
-          }
+          startTimer(20, "Bonus Timer", () => {
+            if (!buzzed) {
+              showBonusAnswer();
+              document.getElementById("showBonusBtn").classList.add("hidden");
+            }
+          });
+          document.getElementById("buzzBtn").classList.remove("hidden");
         }
       }, speed);
-
-      document.getElementById("buzzBtn").classList.remove("hidden");
     }
 
     function submitBonusAnswer() {
-      if (timerLocked) return;
-      const user = document.getElementById("userBonusAnswer").value.trim().toLowerCase();
-      const correct = questionData.bonus_answer.trim().toLowerCase();
-      const isCorrect = user && correct.includes(user);
-      const result = isCorrect ? "✅ Correct!" : "❌ Incorrect.";
-      document.getElementById("bonusAnswer").innerHTML = `${result}<br><b>Bonus Answer:</b> ${questionData.bonus_answer}`;
+      const user = document.getElementById("userBonusAnswer").value.trim();
+      document.getElementById("bonusAnswer").innerHTML = `<b>Bonus Answer:</b> ${questionData.bonus_answer}`;
       document.getElementById("bonusAnswer").classList.remove("hidden");
       document.getElementById("bonusInputDiv").classList.add("hidden");
-      timerLocked = true;
+      document.getElementById("showBonusBtn").classList.add("hidden");
+      clearInterval(countdownRef);
+      document.getElementById("buzzerTimer").textContent = "";
     }
 
     function showBonusAnswer() {
       document.getElementById("bonusAnswer").innerHTML = `<b>Bonus Answer:</b> ${questionData.bonus_answer}`;
       document.getElementById("bonusAnswer").classList.remove("hidden");
+      document.getElementById("bonusInputDiv").classList.add("hidden");
+      document.getElementById("buzzBtn").classList.add("hidden");
+      document.getElementById("showBonusBtn").classList.add("hidden");
     }
   </script>
 </body>
