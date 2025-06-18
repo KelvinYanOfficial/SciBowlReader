@@ -206,6 +206,7 @@
     let bonusTimerLocked = false;
     let bonusShown = false;
     let isBonus = false;
+    let questionLoaded = false;
 
     const speedSlider = document.getElementById("speedSlider");
     speedSlider.addEventListener("input", () => {
@@ -252,6 +253,7 @@
       bonusTimerLocked = false;
       bonusShown = false;
       isBonus = false;
+      questionLoaded = true;
 
       const payload = {};
       const categories = getChecked("categoryList");
@@ -480,7 +482,7 @@ document.getElementById("userBonusAnswer").addEventListener("keydown", function 
   const active = document.activeElement;
   const isTyping = active.tagName === "INPUT" && active.type === "text";
 
-  if (!isTyping) {
+  if (!isTyping && questionLoaded) {
     if (e.code === "Space") {
       e.preventDefault();
       buzz();
@@ -490,6 +492,7 @@ document.getElementById("userBonusAnswer").addEventListener("keydown", function 
     }
   }
 });
+
 
 
 
