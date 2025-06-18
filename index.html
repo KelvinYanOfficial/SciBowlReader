@@ -227,6 +227,14 @@
               }
             });
           }
+
+          // ✅ New logic: start bonus timer if reading ends and player didn’t buzz
+          if (bonus && !bonusBuzzed) {
+            startTimer(20, "Bonus Timer", () => {
+              bonusTimerLocked = true;
+              showAnswer(true);
+            });
+          }
         }
       }, speed);
     }
