@@ -543,12 +543,12 @@ async function loadQuestion() {
       document.getElementById("questionType").textContent = `Type: ${questionData.bonus_type} – ${questionData.category}`;
       startReading(questionData.bonus_question, true);
     }
-    <script type="module">
+   <script type="module">
   import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
   const supabase = createClient(
     "https://iqvfbdacpgozrpvkcrao.supabase.co",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlxdmZiZGFjcGdvenJwdmtjcmFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAyODYzMTAsImV4cCI6MjA2NTg2MjMxMH0.WCMIScyfAUlbUxyHOncu0Xpj-6mu8W8I8138LPpK_LM"
   );
 
   window.supabase = supabase;
@@ -595,11 +595,61 @@ async function loadQuestion() {
     if (error) {
       document.getElementById("loginMsg").textContent = error.message;
     } else {
-      document.getElementById("loginMsg").textContent = "✅ Login successful!";
-      closeLogin();
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", data.user.id)
+        .single();
+
+      if (profile) {
+        currentUser = profile;
+        updateAuthUI();
+        document.getElementById("loginMsg").textContent = "✅ Login successful!";
+        closeLogin();
+      }
     }
   };
 
-  </script>
+  window.logoutUser = async () => {
+    await supabase.auth.signOut();
+    currentUser = null;
+    updateAuthUI();
+  };
+
+  let currentUser = null;
+
+  function updateAuthUI() {
+    const userDiv = document.querySelector('div[style*="right:10px"]');
+    if (currentUser) {
+      userDiv.innerHTML = `
+        <span style="margin-right:10px;">👋 Welcome, <b>${currentUser.username}</b></span>
+        <button onclick="logoutUser()">Logout</button>
+      `;
+    } else {
+      userDiv.innerHTML = `
+        <button onclick="openLogin()">Login</button>
+        <button onclick="openRegister()">Sign Up</button>
+      `;
+    }
+  }
+
+  // Auto login check
+  const { data: sessionData } = await supabase.auth.getSession();
+  const session = sessionData.session;
+  if (session?.user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", session.user.id)
+      .single();
+    if (profile) {
+      currentUser = profile;
+      updateAuthUI();
+    }
+  } else {
+    updateAuthUI();
+  }
+</script>
+
 </body>
 </html>
