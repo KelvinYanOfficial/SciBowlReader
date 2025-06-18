@@ -476,6 +476,21 @@ document.getElementById("userBonusAnswer").addEventListener("keydown", function 
     submitBonusAnswer();
   }
 });
+    document.addEventListener("keydown", function (e) {
+  const answerBoxVisible = !document.getElementById("answerInputDiv").classList.contains("hidden") ||
+                           !document.getElementById("bonusInputDiv").classList.contains("hidden");
+
+  if (answerBoxVisible) return;
+
+  if (e.code === "Space") {
+    e.preventDefault();
+    buzz();
+  } else if (e.key.toLowerCase() === "l") {
+    e.preventDefault();
+    loadQuestion();
+  }
+});
+
 
   </script>
 </body>
