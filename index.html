@@ -5,9 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>SciBowlReader</title>
   <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-  <script id="MathJax-script" async
-    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
-  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -15,59 +13,47 @@
 
     body {
       margin: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #f5f5f5;
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
-      min-height: 100vh;
     }
 
     .game-card {
       background: white;
-      width: 800px;
-      padding: 30px;
-      border-radius: 20px;
-      box-shadow: 0 0 25px rgba(0, 0, 0, 0.15);
+      width: 700px;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.1);
       position: relative;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
     }
 
     .timer {
       position: absolute;
-      top: 20px;
-      right: 30px;
+      top: 15px;
+      right: 20px;
       font-weight: bold;
       font-size: 16px;
-      color: #ff4136;
     }
 
     #readerLine {
-      font-size: 1.3em;
-      margin: 30px 0 20px;
-      min-height: 80px;
+      font-size: 1.2em;
+      margin: 40px 0 20px;
+      min-height: 60px;
       white-space: pre-wrap;
     }
 
-    h1 {
-      font-size: 28px;
-      text-align: center;
-      margin: 10px 0 20px;
-      color: #0074D9;
-    }
-
     button {
-      width: 100%;
-      padding: 12px;
+      margin: 5px 0;
+      padding: 10px 18px;
       background: #0074D9;
       color: white;
       border: none;
-      border-radius: 12px;
+      border-radius: 5px;
       font-size: 16px;
       cursor: pointer;
-      transition: background 0.2s;
     }
 
     button:hover {
@@ -81,11 +67,9 @@
 
     input[type="text"] {
       width: 100%;
-      padding: 12px;
+      padding: 10px;
       margin: 10px 0;
-      font-size: 16px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
+      font-size: 15px;
     }
 
     .hidden {
@@ -94,12 +78,11 @@
 
     #filterToggle {
       position: absolute;
-      top: 20px;
-      left: 30px;
+      top: 15px;
+      left: 20px;
       background: #888;
-      font-size: 14px;
-      padding: 8px 14px;
-      border-radius: 8px;
+      font-size: 13px;
+      padding: 6px 12px;
     }
 
     .filter-drawer {
@@ -111,9 +94,9 @@
       background: #f2f2f2;
       padding: 20px;
       overflow-y: auto;
-      box-shadow: 2px 0 10px rgba(0,0,0,0.15);
+      box-shadow: 2px 0 8px rgba(0,0,0,0.2);
       transition: left 0.3s ease;
-      z-index: 1000;
+      z-index: 999;
     }
 
     .filter-drawer.open {
@@ -122,35 +105,22 @@
 
     .filter-drawer h2 {
       margin-top: 0;
-      font-size: 22px;
-      color: #333;
     }
 
     .section-title {
       margin-top: 20px;
       font-weight: bold;
-      font-size: 16px;
-      color: #555;
-    }
-
-    label {
-      font-size: 15px;
     }
 
     #speedLabel {
       font-size: 14px;
       font-weight: bold;
-      margin-top: 10px;
-      display: block;
-    }
-
-    input[type="range"] {
-      width: 100%;
       margin-top: 5px;
     }
   </style>
 </head>
 <body>
+
   <div id="filterDrawer" class="filter-drawer">
     <h2>⚙️ Filters</h2>
     <div class="section-title">Categories</div>
@@ -386,13 +356,21 @@
       const user = document.getElementById("userAnswer").value.trim();
       const correct = questionData.tossup_answer;
       const isMC = questionData.question_type === "Multiple Choice";
-      const res = await fetch("/api/grade", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userAnswer: user, correctAnswer: correct, isMultipleChoice: isMC })
-      });
-      const data = await res.json();
-      document.getElementById("answer").innerHTML = `<b>Your answer:</b> ${user}<br><b>Answer:</b> ${correct}`;
+      const result = await gradeAnswer(user, correct, isMC);
+
+      if (countdownId) clearInterval(countdownId);
+      countdownId = null;
+      document.getElementById("buzzerTimer").classList.add("hidden");
+
+      if (!readingDone) {
+        const reader = document.getElementById("readerLine");
+        reader.innerHTML = `<b>Tossup (${questionData.question_type}):</b> ${questionData.tossup_question}`;
+        MathJax.typesetPromise([reader]);
+        readingDone = true;
+      }
+
+      document.getElementById("answer").innerHTML =
+        `<b>Your answer:</b> ${user}<br><b>Answer:</b> ${correct}`;
       document.getElementById("answer").classList.remove("hidden");
       document.getElementById("answerInputDiv").classList.add("hidden");
       timerLocked = true;
@@ -403,16 +381,34 @@
       const user = document.getElementById("userBonusAnswer").value.trim();
       const correct = questionData.bonus_answer;
       const isMC = questionData.bonus_type === "Multiple Choice";
-      const res = await fetch("/api/grade", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userAnswer: user, correctAnswer: correct, isMultipleChoice: isMC })
-      });
-      const data = await res.json();
-      document.getElementById("bonusAnswer").innerHTML = `<b>Your answer:</b> ${user}<br><b>Answer:</b> ${correct}`;
+      const result = await gradeAnswer(user, correct, isMC);
+
+      if (countdownId) clearInterval(countdownId);
+      countdownId = null;
+      document.getElementById("buzzerTimer").classList.add("hidden");
+
+      if (!readingDone) {
+        const reader = document.getElementById("readerLine");
+        reader.innerHTML = `<b>Bonus (${questionData.bonus_type}):</b> ${questionData.bonus_question}`;
+        MathJax.typesetPromise([reader]);
+        readingDone = true;
+      }
+
+      document.getElementById("bonusAnswer").innerHTML =
+        `<b>Your answer:</b> ${user}<br><b>Answer:</b> ${correct}`;
       document.getElementById("bonusAnswer").classList.remove("hidden");
       document.getElementById("bonusInputDiv").classList.add("hidden");
       bonusTimerLocked = true;
+    }
+
+    async function gradeAnswer(userAnswer, correctAnswer, isMC) {
+      const res = await fetch("/api/grade", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userAnswer, correctAnswer, isMultipleChoice: isMC })
+      });
+      const data = await res.json();
+      return data.result;
     }
 
     function showAnswer(bonus = false) {
