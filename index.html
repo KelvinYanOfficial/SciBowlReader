@@ -678,20 +678,28 @@
   }
 
   const { data: sessionData } = await supabase.auth.getSession();
-  const session = sessionData.session;
-  if (session?.user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", session.user.id)
-      .single();
-    if (profile) {
-      currentUser = profile;
-      updateAuthUI();
-    }
+const session = sessionData.session;
+
+if (session?.user) {
+  const { data: profile, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", session.user.id)
+    .single();
+
+  if (profile && !error) {
+    currentUser = profile;
+    updateAuthUI();
   } else {
+    await supabase.auth.signOut(); // force logout if profile load fails
+    currentUser = null;
     updateAuthUI();
   }
+} else {
+  currentUser = null;
+  updateAuthUI();
+}
+
 </script>
 </body>
 </html>
