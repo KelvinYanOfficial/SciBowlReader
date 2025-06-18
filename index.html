@@ -463,6 +463,20 @@
       document.getElementById("questionType").textContent = `Type: ${questionData.bonus_type} – ${questionData.category}`;
       startReading(questionData.bonus_question, true);
     }
+    document.getElementById("userAnswer").addEventListener("keydown", function (e) {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    submitAnswer();
+  }
+});
+
+document.getElementById("userBonusAnswer").addEventListener("keydown", function (e) {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    submitBonusAnswer();
+  }
+});
+
   </script>
 </body>
 </html>
