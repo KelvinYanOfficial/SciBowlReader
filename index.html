@@ -23,8 +23,9 @@
 
     .game-card {
       background: white;
-      width: 900px;
-      padding: 30px;
+      width: 1000px;
+      length: 1000px;
+      padding: 40px;
       border-radius: 12px;
       box-shadow: 0 0 20px rgba(0,0,0,0.1);
       position: relative;
@@ -76,133 +77,92 @@
       display: none;
     }
 
-    .filter-box {
-      margin-bottom: 15px;
+    #filterToggle {
+      position: absolute;
+      top: 15px;
+      right: 20px;
+      background: #888;
+      font-size: 13px;
+      padding: 6px 12px;
     }
 
-    .filter-toggle {
-      background: #ccc;
-      color: black;
-      padding: 8px 14px;
-      border-radius: 5px;
-      cursor: pointer;
-      display: inline-block;
-      font-size: 14px;
-      margin-right: 10px;
+    .filter-drawer {
+      position: fixed;
+      top: 0;
+      right: -300px;
+      width: 300px;
+      height: 100%;
+      background: #f2f2f2;
+      padding: 20px;
+      overflow-y: auto;
+      box-shadow: -2px 0 8px rgba(0,0,0,0.2);
+      transition: right 0.3s ease;
+      z-index: 999;
     }
 
-    .filter-options {
-      display: none;
-      margin-top: 10px;
+    .filter-drawer.open {
+      right: 0;
     }
 
-    .pill {
-      display: inline-block;
-      padding: 8px 14px;
-      margin: 5px;
-      border-radius: 25px;
-      background-color: #eee;
-      cursor: pointer;
-      font-size: 14px;
+    .filter-drawer h2 {
+      margin-top: 0;
     }
 
-    .pill.selected {
-      background-color: #0074D9;
-      color: white;
+    .section-title {
+      margin-top: 20px;
+      font-weight: bold;
     }
 
     #speedLabel {
+      font-size: 14px;
       font-weight: bold;
-      margin-top: 15px;
+      margin-top: 5px;
     }
+    #categoryList label,
+#difficultyList label {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 15px;
+  cursor: pointer;
+}
 
-    input[type="range"] {
-      width: 100%;
-    }
+#categoryList input[type="checkbox"],
+#difficultyList input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  accent-color: #0074D9; /* Adds a modern blue highlight */
+}
+
   </style>
 </head>
 <body>
-  <div class="game-card">
-    <div class="timer" id="buzzerTimer" class="hidden"></div>
-    <h1>🔬 SciBowlReader</h1>
 
-    <div class="filter-box">
-      <div class="filter-toggle" onclick="toggleSection('catOptions')">Categories ▾</div>
-      <div id="catOptions" class="filter-options"></div>
-
-      <div class="filter-toggle" onclick="toggleSection('diffOptions')">Difficulty ▾</div>
-      <div id="diffOptions" class="filter-options"></div>
-
-      <label id="speedLabel">Speed: 7 (Recommended: 5–8)</label>
-      <input type="range" id="speedSlider" min="1" max="10" value="7" />
+  <div id="filterDrawer" class="filter-drawer">
+    <h2>⚙️ Filters</h2>
+    <div class="section-title">Categories</div>
+    <label><input type="checkbox" id="selectAllCats"> Select All</label>
+    <div id="categoryList">
+      <label><input type="checkbox" value="PHYSICS"> Physics</label><br>
+      <label><input type="checkbox" value="CHEMISTRY"> Chemistry</label><br>
+      <label><input type="checkbox" value="BIOLOGY"> Biology</label><br>
+      <label><input type="checkbox" value="EARTH AND SPACE"> Earth and Space</label><br>
+      <label><input type="checkbox" value="ENERGY"> Energy</label><br>
+      <label><input type="checkbox" value="MATH"> Math</label><br>
+      <label><input type="checkbox" value="GENERAL SCIENCE"> General Science</label><br>
+      <label><input type="checkbox" value="ASTRONOMY"> Astronomy</label><br>
+      <label><input type="checkbox" value="COMPUTER SCIENCE"> Computer Science</label><br>
     </div>
-
-    <button onclick="loadQuestion()">Load Question</button>
-    <button id="pauseBtn" onclick="togglePause()" class="hidden">Pause</button>
-    <button id="buzzBtn" onclick="buzz()" class="hidden">Buzz!</button>
-    <button id="showBonusBtn" onclick="startBonus()" class="hidden">Show Bonus</button>
-
-    <div id="questionType"></div>
-    <div id="loading" class="hidden">Loading question...</div>
-    <div id="readerLine"></div>
-    <div id="answer" class="hidden"></div>
-    <div id="answerInputDiv" class="hidden">
-      <input type="text" id="userAnswer" placeholder="Your answer..." />
-      <button onclick="submitAnswer()">Submit</button>
+    <div class="section-title">Difficulty</div>
+    <div id="difficultyList">
+      <label><input type="checkbox" value="middle_school"> Middle School</label><br>
+      <label><input type="checkbox" value="high_school"> High School</label>
     </div>
-    <div id="bonusAnswer" class="hidden"></div>
-    <div id="bonusInputDiv" class="hidden">
-      <input type="text" id="userBonusAnswer" placeholder="Your bonus answer..." />
-      <button onclick="submitBonusAnswer()">Submit</button>
-    </div>
+    <div class="section-title">Reading Speed</div>
+    <input type="range" id="speedSlider" min="1" max="10" value="7" />
+    <span id="speedLabel">Speed: 7 (Recommended: 5–8)</span>
   </div>
-
-  <script>
-    const categories = [
-      "PHYSICS", "CHEMISTRY", "BIOLOGY", "EARTH AND SPACE", "ENERGY", "MATH", "GENERAL SCIENCE", "ASTRONOMY", "COMPUTER SCIENCE"
-    ];
-    const difficulties = ["middle_school", "high_school"];
-
-    const selectedCats = new Set();
-    const selectedDiffs = new Set();
-
-    function renderPills(containerId, options, selectedSet) {
-      const container = document.getElementById(containerId);
-      container.innerHTML = "";
-      options.forEach(opt => {
-        const pill = document.createElement("div");
-        pill.className = "pill";
-        pill.textContent = opt.replace("_", " ");
-        pill.onclick = () => {
-          if (selectedSet.has(opt)) {
-            selectedSet.delete(opt);
-            pill.classList.remove("selected");
-          } else {
-            selectedSet.add(opt);
-            pill.classList.add("selected");
-          }
-        };
-        container.appendChild(pill);
-      });
-    }
-
-    function toggleSection(id) {
-      const section = document.getElementById(id);
-      section.style.display = section.style.display === "none" ? "block" : "none";
-    }
-
-    document.addEventListener("DOMContentLoaded", () => {
-      renderPills("catOptions", categories, selectedCats);
-      renderPills("diffOptions", difficulties, selectedDiffs);
-      toggleSection("catOptions");
-      toggleSection("diffOptions");
-    });
-
-    document.getElementById("speedSlider").addEventListener("input", e => {
-      document.getElementById("speedLabel").textContent = `Speed: ${e.target.value} (Recommended: 5–8)`;
-    });
-
-
 
   <div class="game-card">
     <button id="filterToggle" onclick="toggleDrawer()">Filters</button>
@@ -506,6 +466,3 @@
 </html>
 
 
-  </script>
-</body>
-</html>
