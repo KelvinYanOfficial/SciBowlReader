@@ -250,7 +250,7 @@
       return [...document.querySelectorAll(`#${id} input:checked`)].map(el => el.value);
     }
 
- let loadingInProgress = false; // Place this at the top with other state variables
+
 
 async function loadQuestion() {
   if (loadingInProgress) return; // 🔒 prevent spamming
