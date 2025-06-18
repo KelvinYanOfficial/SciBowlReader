@@ -210,6 +210,7 @@
     let bonusShown = false;
     let isBonus = false;
     let questionLoaded = false;
+    let loadingInProgress = false;
 
     const speedSlider = document.getElementById("speedSlider");
     speedSlider.addEventListener("input", () => {
@@ -249,13 +250,17 @@
       return [...document.querySelectorAll(`#${id} input:checked`)].map(el => el.value);
     }
 
- async function loadQuestion() {
-  // 🔒 Disable the Load button immediately
+ let loadingInProgress = false; // Place this at the top with other state variables
+
+async function loadQuestion() {
+  if (loadingInProgress) return; // 🔒 prevent spamming
+  loadingInProgress = true;
+
   const loadBtn = document.getElementById("loadBtn");
   loadBtn.disabled = true;
   loadBtn.textContent = "Loading...";
 
-  // 🧹 FULL RESET
+  // FULL RESET
   if (countdownId) clearInterval(countdownId);
   countdownId = null;
   if (interval) clearInterval(interval);
@@ -305,15 +310,18 @@
     document.getElementById("questionType").textContent = `Type: ${questionData.question_type} – ${questionData.category}`;
     document.getElementById("loading").classList.add("hidden");
     questionLoaded = true;
-    loadBtn.disabled = false; // ✅ RE-ENABLE button here
+    loadBtn.disabled = false;
     loadBtn.textContent = "Load Question (L)";
+    loadingInProgress = false;
     startReading(questionData.tossup_question, false);
   } catch (err) {
     document.getElementById("readerLine").innerHTML = `<p style="color:red;">⚠️ Failed to load question.</p>`;
     loadBtn.disabled = false;
     loadBtn.textContent = "Load Question (L)";
+    loadingInProgress = false;
   }
 }
+
 
 
 
