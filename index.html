@@ -173,7 +173,7 @@
     <button id="filterToggle" onclick="toggleDrawer()">Filters</button>
     <div id="buzzerTimer" class="timer hidden"></div>
     <h1>🔬 SciBowlReader</h1>
-    <button onclick="loadQuestion()">Load Question (L) </button>
+    <button id="loadBtn" onclick="loadQuestion()">Load Question (L)</button>
     <button id="pauseBtn" onclick="togglePause()" class="hidden">Pause</button>
     <button id="buzzBtn" onclick="buzz()" class="hidden">Buzz!</button>
     <button id="showBonusBtn" onclick="startBonus()" class="hidden">Show Bonus</button>
@@ -250,13 +250,18 @@
     }
 
  async function loadQuestion() {
-  // Ensure full reset
+  // 🔒 Disable load button to prevent spamming
+  const loadBtn = document.getElementById("loadBtn");
+  loadBtn.disabled = true;
+  loadBtn.textContent = "Loading...";
+
+  // Clear timers and intervals
   if (countdownId) clearInterval(countdownId);
   countdownId = null;
   if (interval) clearInterval(interval);
   interval = null;
 
-  // Reset all UI and state
+  // Reset UI
   document.getElementById("buzzBtn").classList.add("hidden");
   document.getElementById("readerLine").innerHTML = "";
   document.getElementById("loading").classList.remove("hidden");
@@ -271,7 +276,6 @@
   document.getElementById("userAnswer").value = "";
   document.getElementById("userBonusAnswer").value = "";
 
-  // Reset internal state
   buzzed = false;
   bonusBuzzed = false;
   readingDone = false;
@@ -304,6 +308,13 @@
   } catch (err) {
     document.getElementById("readerLine").innerHTML = `<p style="color:red;">⚠️ Failed to load question.</p>`;
   }
+
+  // ✅ Re-enable button after loading is complete
+  loadBtn.disabled = true; // keep disabled until new question finished
+  setTimeout(() => {
+    loadBtn.disabled = false;
+    loadBtn.textContent = "Load Question (L)";
+  }, 1000); // Optional: slight delay before re-enabling
 }
 
 
