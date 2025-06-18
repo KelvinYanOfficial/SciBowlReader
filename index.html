@@ -249,57 +249,63 @@
       return [...document.querySelectorAll(`#${id} input:checked`)].map(el => el.value);
     }
 
-    async function loadQuestion() {
-      if (countdownId) clearInterval(countdownId);
-      countdownId = null;
-      clearInterval(interval);
-      document.getElementById("buzzBtn").classList.add("hidden");
-      document.getElementById("readerLine").innerHTML = "";
-      document.getElementById("loading").classList.remove("hidden");
-      document.getElementById("answer").classList.add("hidden");
-      document.getElementById("bonusAnswer").classList.add("hidden");
-      document.getElementById("bonusInputDiv").classList.add("hidden");
-      document.getElementById("answerInputDiv").classList.add("hidden");
-      document.getElementById("buzzerTimer").textContent = "";
-      document.getElementById("buzzerTimer").classList.add("hidden");
-      document.getElementById("showBonusBtn").classList.add("hidden");
-      document.getElementById("questionType").textContent = "";
-      document.getElementById("userAnswer").value = "";
-      document.getElementById("userBonusAnswer").value = "";
+ async function loadQuestion() {
+  // Ensure full reset
+  if (countdownId) clearInterval(countdownId);
+  countdownId = null;
+  if (interval) clearInterval(interval);
+  interval = null;
 
-      buzzed = false;
-      bonusBuzzed = false;
-      readingDone = false;
-      timerLocked = false;
-      bonusTimerLocked = false;
-      bonusShown = false;
-      isBonus = false;
-      questionLoaded = false;
+  // Reset all UI and state
+  document.getElementById("buzzBtn").classList.add("hidden");
+  document.getElementById("readerLine").innerHTML = "";
+  document.getElementById("loading").classList.remove("hidden");
+  document.getElementById("answer").classList.add("hidden");
+  document.getElementById("bonusAnswer").classList.add("hidden");
+  document.getElementById("bonusInputDiv").classList.add("hidden");
+  document.getElementById("answerInputDiv").classList.add("hidden");
+  document.getElementById("buzzerTimer").textContent = "";
+  document.getElementById("buzzerTimer").classList.add("hidden");
+  document.getElementById("showBonusBtn").classList.add("hidden");
+  document.getElementById("questionType").textContent = "";
+  document.getElementById("userAnswer").value = "";
+  document.getElementById("userBonusAnswer").value = "";
 
-      const payload = {};
-      const categories = getChecked("categoryList");
-      const difficulties = getChecked("difficultyList");
-      if (categories.length) payload.categories = categories;
-      if (difficulties.length) payload.difficulties = difficulties;
+  // Reset internal state
+  buzzed = false;
+  bonusBuzzed = false;
+  readingDone = false;
+  timerLocked = false;
+  bonusTimerLocked = false;
+  bonusShown = false;
+  isBonus = false;
+  questionLoaded = false;
 
-      try {
-        const res = await fetch("https://sci-bowl-proxy.onrender.com/api/random", {
-          method: Object.keys(payload).length ? "POST" : "GET",
-          headers: { "Content-Type": "application/json" },
-          body: Object.keys(payload).length ? JSON.stringify(payload) : null
-        });
-        const data = await res.json();
-        questionData = data.questions[0];
-        questionData.question_type = questionData.tossup_format;
-        questionData.bonus_type = questionData.bonus_format;
-        document.getElementById("questionType").textContent = `Type: ${questionData.question_type} – ${questionData.category}`;
-        document.getElementById("loading").classList.add("hidden");
-        questionLoaded = true;
-        startReading(questionData.tossup_question, false);
-      } catch (err) {
-        document.getElementById("readerLine").innerHTML = `<p style="color:red;">⚠️ Failed to load question.</p>`;
-      }
-    }
+  const payload = {};
+  const categories = getChecked("categoryList");
+  const difficulties = getChecked("difficultyList");
+  if (categories.length) payload.categories = categories;
+  if (difficulties.length) payload.difficulties = difficulties;
+
+  try {
+    const res = await fetch("https://sci-bowl-proxy.onrender.com/api/random", {
+      method: Object.keys(payload).length ? "POST" : "GET",
+      headers: { "Content-Type": "application/json" },
+      body: Object.keys(payload).length ? JSON.stringify(payload) : null
+    });
+    const data = await res.json();
+    questionData = data.questions[0];
+    questionData.question_type = questionData.tossup_format;
+    questionData.bonus_type = questionData.bonus_format;
+    document.getElementById("questionType").textContent = `Type: ${questionData.question_type} – ${questionData.category}`;
+    document.getElementById("loading").classList.add("hidden");
+    questionLoaded = true;
+    startReading(questionData.tossup_question, false);
+  } catch (err) {
+    document.getElementById("readerLine").innerHTML = `<p style="color:red;">⚠️ Failed to load question.</p>`;
+  }
+}
+
 
     function startReading(text, bonus = false) {
       const words = text.split(/\s+/);
