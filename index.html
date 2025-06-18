@@ -573,12 +573,17 @@ window.closeEditProfile = () => {
 
 window.updateUsername = async () => {
   const newUsername = document.getElementById("newUsername").value.trim();
-  if (!newUsername || !currentUser) return;
+  if (!newUsername) return;
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
 
   const { error } = await supabase
     .from("profiles")
     .update({ username: newUsername })
-    .eq("id", currentUser.id);
+    .eq("id", user.id);
 
   if (error) {
     document.getElementById("updateMsg").textContent = "❌ Update failed.";
@@ -589,6 +594,7 @@ window.updateUsername = async () => {
     setTimeout(closeEditProfile, 1000);
   }
 };
+
 
   window.openRegister = () => document.getElementById("registerModal").classList.remove("hidden");
   window.closeRegister = () => document.getElementById("registerModal").classList.add("hidden");
