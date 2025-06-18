@@ -169,7 +169,6 @@
     async function loadQuestion() {
       if (countdownId) clearInterval(countdownId);
       countdownId = null;
-
       clearInterval(interval);
       document.getElementById("buzzBtn").classList.add("hidden");
       document.getElementById("readerLine").innerHTML = "";
@@ -182,6 +181,8 @@
       document.getElementById("buzzerTimer").classList.add("hidden");
       document.getElementById("showBonusBtn").classList.add("hidden");
       document.getElementById("questionType").textContent = "";
+      document.getElementById("userAnswer").value = "";
+      document.getElementById("userBonusAnswer").value = "";
 
       buzzed = false;
       bonusBuzzed = false;
@@ -225,7 +226,6 @@
       const speed = 1100 - parseInt(speedSlider.value) * 100;
       const typeText = bonus ? questionData.bonus_type : questionData.question_type;
       reader.innerHTML = `<b>${bonus ? "Bonus" : "Tossup"} (${typeText}):</b> `;
-
       document.getElementById("buzzBtn").classList.remove("hidden");
 
       interval = setInterval(() => {
@@ -258,7 +258,6 @@
       if (timerLocked || bonusTimerLocked) return;
       if (isBonus && bonusBuzzed) return;
       if (!isBonus && buzzed) return;
-
       clearInterval(interval);
       document.getElementById("buzzBtn").classList.add("hidden");
       document.getElementById("buzzerTimer").textContent = "";
@@ -287,7 +286,6 @@
     function startTimer(seconds, label, callback) {
       if (countdownId) clearInterval(countdownId);
       countdownId = null;
-
       const timerDiv = document.getElementById("buzzerTimer");
       timerDiv.classList.remove("hidden");
       timerDiv.textContent = `⏱ ${label}: ${seconds}`;
@@ -307,21 +305,15 @@
       const user = document.getElementById("userAnswer").value.trim();
       const correct = questionData.tossup_answer;
       const isMC = questionData.question_type === "Multiple Choice";
-
-      try {
-        await gradeAnswer(user, correct, isMC);
-      } catch (_) {}
-
-      // Reveal rest of tossup
+      try { await gradeAnswer(user, correct, isMC); } catch (_) {}
       const full = questionData.tossup_question;
       const remaining = full.split(/\s+/).slice(wordIndex).join(" ");
       document.getElementById("readerLine").innerHTML += remaining + " ";
       await MathJax.typesetPromise([document.getElementById("readerLine")]);
-
       if (countdownId) clearInterval(countdownId);
       countdownId = null;
-
-      document.getElementById("answer").innerHTML = `<b>Answer:</b> ${correct}`;
+      document.getElementById("answer").innerHTML =
+        `<b>Your answer:</b> ${user}<br><b>Answer:</b> ${correct}`;
       document.getElementById("answer").classList.remove("hidden");
       document.getElementById("answerInputDiv").classList.add("hidden");
       timerLocked = true;
@@ -332,21 +324,15 @@
       const user = document.getElementById("userBonusAnswer").value.trim();
       const correct = questionData.bonus_answer;
       const isMC = questionData.bonus_type === "Multiple Choice";
-
-      try {
-        await gradeAnswer(user, correct, isMC);
-      } catch (_) {}
-
-      // Reveal rest of bonus
+      try { await gradeAnswer(user, correct, isMC); } catch (_) {}
       const full = questionData.bonus_question;
       const remaining = full.split(/\s+/).slice(wordIndex).join(" ");
       document.getElementById("readerLine").innerHTML += remaining + " ";
       await MathJax.typesetPromise([document.getElementById("readerLine")]);
-
       if (countdownId) clearInterval(countdownId);
       countdownId = null;
-
-      document.getElementById("bonusAnswer").innerHTML = `<b>Answer:</b> ${correct}`;
+      document.getElementById("bonusAnswer").innerHTML =
+        `<b>Your answer:</b> ${user}<br><b>Answer:</b> ${correct}`;
       document.getElementById("bonusAnswer").classList.remove("hidden");
       document.getElementById("bonusInputDiv").classList.add("hidden");
       bonusTimerLocked = true;
@@ -397,5 +383,3 @@
   </script>
 </body>
 </html>
-
-
