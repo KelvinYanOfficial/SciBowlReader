@@ -75,7 +75,6 @@
     .hidden {
       display: none;
     }
-
     #filterToggle {
       position: absolute;
       top: 15px;
@@ -168,12 +167,12 @@
       <div id="loginMsg" style="margin-top:10px; color:red;"></div>
     </div>
   </div>
-
   <!-- Top-right buttons -->
-  <div style="position:absolute; top:10px; right:10px; z-index:1000;">
+  <div style="position:absolute; top:10px; right:10px; z-index:1000;" id="authControls">
     <button onclick="openLogin()">Login</button>
     <button onclick="openRegister()">Sign Up</button>
   </div>
+
   <div id="filterDrawer" class="filter-drawer">
     <h2>⚙️ Filters</h2>
     <div class="section-title">Categories</div>
@@ -222,6 +221,7 @@
     </div>
   </div>
 
+  <!-- Edit Profile Modal -->
   <div id="editProfileModal" class="hidden" style="position: fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.6); display:flex; justify-content:center; align-items:center; z-index:3000;">
     <div style="background:white; padding:30px; border-radius:10px; width:300px;">
       <h2>Edit Profile</h2>
@@ -549,157 +549,3 @@
     startReading(questionData.bonus_question, true);
   }
 </script>
-<script type="module">
-  import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
-
-  const supabase = createClient(
-    "https://iqvfbdacpgozrpvkcrao.supabase.co",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlxdmZiZGFjcGdvenJwdmtjcmFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAyODYzMTAsImV4cCI6MjA2NTg2MjMxMH0.WCMIScyfAUlbUxyHOncu0Xpj-6mu8W8I8138LPpK_LM"
-  );
-
-  window.supabase = supabase;
-
-  window.showEditProfile = () => {
-    document.getElementById("editProfileModal").classList.remove("hidden");
-  };
-
-  window.closeEditProfile = () => {
-    document.getElementById("editProfileModal").classList.add("hidden");
-  };
-
-  window.updateUsername = async () => {
-    const newUsername = document.getElementById("newUsername").value.trim();
-    if (!newUsername) return;
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { error } = await supabase
-      .from("profiles")
-      .update({ username: newUsername })
-      .eq("id", user.id);
-
-    if (error) {
-      document.getElementById("updateMsg").textContent = "❌ Update failed.";
-    } else {
-      document.getElementById("updateMsg").textContent = "✅ Username updated!";
-      currentUser.username = newUsername;
-      updateAuthUI();
-      setTimeout(closeEditProfile, 1000);
-    }
-  };
-
-  window.openRegister = () =>
-    document.getElementById("registerModal").classList.remove("hidden");
-  window.closeRegister = () =>
-    document.getElementById("registerModal").classList.add("hidden");
-  window.openLogin = () =>
-    document.getElementById("loginModal").classList.remove("hidden");
-  window.closeLogin = () =>
-    document.getElementById("loginModal").classList.add("hidden");
-
-  window.registerUser = async () => {
-    const email = document.getElementById("regEmail").value.trim();
-    const password = document.getElementById("regPassword").value.trim();
-    const username = document.getElementById("regUsername").value.trim();
-
-    if (!email || !password || !username) {
-      document.getElementById("registerMsg").textContent = "All fields required.";
-      return;
-    }
-
-    const { data, error } = await supabase.auth.signUp({ email, password });
-
-    if (error) {
-      document.getElementById("registerMsg").textContent = error.message;
-      return;
-    }
-
-    const user = data.user;
-    if (user) {
-      const { error: insertError } = await supabase
-        .from("profiles")
-        .insert([{ id: user.id, username }]);
-      if (insertError) {
-        document.getElementById("registerMsg").textContent = "Account created, but profile failed.";
-      } else {
-        document.getElementById("registerMsg").textContent = "✅ Check your email to confirm.";
-      }
-    }
-  };
-
-  window.loginUser = async () => {
-    const email = document.getElementById("logEmail").value.trim();
-    const password = document.getElementById("logPassword").value.trim();
-
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-
-    if (error) {
-      document.getElementById("loginMsg").textContent = error.message;
-    } else {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", data.user.id)
-        .single();
-
-      if (profile) {
-        currentUser = profile;
-        updateAuthUI();
-        document.getElementById("loginMsg").textContent = "✅ Login successful!";
-        closeLogin();
-      }
-    }
-  };
-
-  window.logoutUser = async () => {
-    await supabase.auth.signOut();
-    currentUser = null;
-    updateAuthUI();
-  };
-
-  let currentUser = null;
-
-  function updateAuthUI() {
-    const userDiv = document.querySelector('div[style*="right:10px"]');
-    if (currentUser) {
-      userDiv.innerHTML = `
-        <span style="margin-right:10px;">👋 Welcome, <b>${currentUser.username}</b></span>
-        <button onclick="logoutUser()">Logout</button>
-      `;
-    } else {
-      userDiv.innerHTML = `
-        <button onclick="openLogin()">Login</button>
-        <button onclick="openRegister()">Sign Up</button>
-      `;
-    }
-  }
-
-  const { data: sessionData } = await supabase.auth.getSession();
-const session = sessionData.session;
-
-if (session?.user) {
-  const { data: profile, error } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", session.user.id)
-    .single();
-
-  if (profile && !error) {
-    currentUser = profile;
-    updateAuthUI();
-  } else {
-    await supabase.auth.signOut(); // force logout if profile load fails
-    currentUser = null;
-    updateAuthUI();
-  }
-} else {
-  currentUser = null;
-  updateAuthUI();
-}
-
-</script>
-</body>
-</html>
