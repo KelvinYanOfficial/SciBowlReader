@@ -76,15 +76,17 @@
     .hidden {
       display: none;
     }
+    
+ #filterToggle {
+  position: absolute;
+  top: 15px;
+  right: 340px;  /* moved it left to be outside the drawer */
+  background: #888;
+  font-size: 13px;
+  padding: 6px 12px;
+  z-index: 1001; /* make sure it's above the drawer */
+}
 
-    #filterToggle {
-      position: absolute;
-      top: 15px;
-      right: 20px;
-      background: #888;
-      font-size: 13px;
-      padding: 6px 12px;
-    }
 
     .filter-drawer {
       position: fixed;
