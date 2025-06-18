@@ -250,20 +250,21 @@
     }
 
  async function loadQuestion() {
-  // 🔒 Disable load button to prevent spamming
+  // 🔒 Disable the Load button immediately
   const loadBtn = document.getElementById("loadBtn");
   loadBtn.disabled = true;
   loadBtn.textContent = "Loading...";
 
-  // Clear timers and intervals
+  // 🧹 FULL RESET
   if (countdownId) clearInterval(countdownId);
   countdownId = null;
   if (interval) clearInterval(interval);
   interval = null;
 
-  // Reset UI
-  document.getElementById("buzzBtn").classList.add("hidden");
+  wordIndex = 0;
   document.getElementById("readerLine").innerHTML = "";
+
+  document.getElementById("buzzBtn").classList.add("hidden");
   document.getElementById("loading").classList.remove("hidden");
   document.getElementById("answer").classList.add("hidden");
   document.getElementById("bonusAnswer").classList.add("hidden");
@@ -304,18 +305,16 @@
     document.getElementById("questionType").textContent = `Type: ${questionData.question_type} – ${questionData.category}`;
     document.getElementById("loading").classList.add("hidden");
     questionLoaded = true;
+    loadBtn.disabled = false; // ✅ RE-ENABLE button here
+    loadBtn.textContent = "Load Question (L)";
     startReading(questionData.tossup_question, false);
   } catch (err) {
     document.getElementById("readerLine").innerHTML = `<p style="color:red;">⚠️ Failed to load question.</p>`;
-  }
-
-  // ✅ Re-enable button after loading is complete
-  loadBtn.disabled = true; // keep disabled until new question finished
-  setTimeout(() => {
     loadBtn.disabled = false;
     loadBtn.textContent = "Load Question (L)";
-  }, 1000); // Optional: slight delay before re-enabling
+  }
 }
+
 
 
     function startReading(text, bonus = false) {
