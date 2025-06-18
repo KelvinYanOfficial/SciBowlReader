@@ -162,6 +162,7 @@
     <input id="logEmail" type="email" placeholder="Email" style="width:100%; margin-bottom:10px; padding:8px;" />
     <input id="logPassword" type="password" placeholder="Password" style="width:100%; margin-bottom:10px; padding:8px;" />
     <button onclick="loginUser()">Login</button>
+    <button onclick="showEditProfile()">Edit Profile</button>
     <button onclick="closeLogin()" style="background:gray; margin-top:10px;">Cancel</button>
     <div id="loginMsg" style="margin-top:10px; color:red;"></div>
   </div>
@@ -221,6 +222,16 @@
       <button onclick="submitBonusAnswer()">Submit</button>
     </div>
   </div>
+  <div id="editProfileModal" class="hidden" style="position: fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.6); display:flex; justify-content:center; align-items:center; z-index:3000;">
+  <div style="background:white; padding:30px; border-radius:10px; width:300px;">
+    <h2>Edit Profile</h2>
+    <input id="newUsername" type="text" placeholder="New Username" style="width:100%; margin-bottom:10px; padding:8px;" />
+    <button onclick="updateUsername()">Save</button>
+    <button onclick="closeEditProfile()" style="background:gray; margin-top:10px;">Cancel</button>
+    <div id="updateMsg" style="margin-top:10px; color:green;"></div>
+  </div>
+</div>
+
 
   <script>
     function toggleDrawer() {
@@ -552,6 +563,32 @@ async function loadQuestion() {
   );
 
   window.supabase = supabase;
+window.showEditProfile = () => {
+  document.getElementById("editProfileModal").classList.remove("hidden");
+};
+
+window.closeEditProfile = () => {
+  document.getElementById("editProfileModal").classList.add("hidden");
+};
+
+window.updateUsername = async () => {
+  const newUsername = document.getElementById("newUsername").value.trim();
+  if (!newUsername || !currentUser) return;
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ username: newUsername })
+    .eq("id", currentUser.id);
+
+  if (error) {
+    document.getElementById("updateMsg").textContent = "❌ Update failed.";
+  } else {
+    document.getElementById("updateMsg").textContent = "✅ Username updated!";
+    currentUser.username = newUsername;
+    updateAuthUI();
+    setTimeout(closeEditProfile, 1000);
+  }
+};
 
   window.openRegister = () => document.getElementById("registerModal").classList.remove("hidden");
   window.closeRegister = () => document.getElementById("registerModal").classList.add("hidden");
