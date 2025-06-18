@@ -7,101 +7,157 @@
   <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
   <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
       font-family: Arial, sans-serif;
-      display: flex;
+      background: #f4f4f4;
       height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
-    .sidebar {
-      width: 250px;
-      background: #f2f2f2;
+
+    .game-card {
+      background: white;
+      width: 700px;
       padding: 20px;
-      overflow-y: auto;
-      border-right: 1px solid #ccc;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.1);
+      position: relative;
     }
-    .main {
-      flex: 1;
-      padding: 20px;
-      overflow-y: auto;
+
+    .timer {
+      position: absolute;
+      top: 15px;
+      right: 20px;
+      font-weight: bold;
+      font-size: 16px;
     }
+
     #readerLine {
-      font-size: 1.1em;
-      margin-top: 15px;
+      font-size: 1.2em;
+      margin: 40px 0 20px;
       min-height: 60px;
       white-space: pre-wrap;
     }
-    #loading, #buzzerTimer, #answer, #bonusAnswer {
-      margin-top: 15px;
-      font-weight: bold;
-    }
+
     button {
       margin: 5px 0;
-      padding: 8px 14px;
+      padding: 10px 18px;
       background: #0074D9;
       color: white;
       border: none;
-      border-radius: 4px;
+      border-radius: 5px;
+      font-size: 16px;
       cursor: pointer;
-      font-size: 15px;
     }
+
     button:hover {
       background: #005fa3;
     }
+
+    #answer, #bonusAnswer, #loading, #questionType {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      font-size: 15px;
+    }
+
     .hidden {
       display: none;
     }
-    input[type="text"] {
-      width: 100%;
-      padding: 6px;
-      margin-top: 5px;
+
+    #filterToggle {
+      position: absolute;
+      top: 15px;
+      left: 20px;
+      background: #888;
+      font-size: 13px;
+      padding: 6px 12px;
     }
+
+    /* Slide-in filter drawer */
+    .filter-drawer {
+      position: fixed;
+      top: 0;
+      left: -300px;
+      width: 300px;
+      height: 100%;
+      background: #f2f2f2;
+      padding: 20px;
+      overflow-y: auto;
+      box-shadow: 2px 0 8px rgba(0,0,0,0.2);
+      transition: left 0.3s ease;
+      z-index: 999;
+    }
+
+    .filter-drawer.open {
+      left: 0;
+    }
+
+    .filter-drawer h2 {
+      margin-top: 0;
+    }
+
     .section-title {
       margin-top: 20px;
       font-weight: bold;
     }
+
     #speedLabel {
-      margin-top: 5px;
       font-size: 14px;
       font-weight: bold;
+      margin-top: 5px;
     }
   </style>
 </head>
 <body>
-  <div class="sidebar">
+
+  <div id="filterDrawer" class="filter-drawer">
     <h2>⚙️ Filters</h2>
     <div class="section-title">Categories</div>
     <label><input type="checkbox" id="selectAllCats"> Select All</label>
     <div id="categoryList">
-      <label><input type="checkbox" value="PHYSICS"> Physics</label>
-      <label><input type="checkbox" value="CHEMISTRY"> Chemistry</label>
-      <label><input type="checkbox" value="BIOLOGY"> Biology</label>
-      <label><input type="checkbox" value="EARTH AND SPACE"> Earth and Space</label>
-      <label><input type="checkbox" value="ENERGY"> Energy</label>
-      <label><input type="checkbox" value="MATH"> Math</label>
-      <label><input type="checkbox" value="GENERAL SCIENCE"> General Science</label>
-      <label><input type="checkbox" value="ASTRONOMY"> Astronomy</label>
-      <label><input type="checkbox" value="COMPUTER SCIENCE"> Computer Science</label>
+      <label><input type="checkbox" value="PHYSICS"> Physics</label><br>
+      <label><input type="checkbox" value="CHEMISTRY"> Chemistry</label><br>
+      <label><input type="checkbox" value="BIOLOGY"> Biology</label><br>
+      <label><input type="checkbox" value="EARTH AND SPACE"> Earth and Space</label><br>
+      <label><input type="checkbox" value="ENERGY"> Energy</label><br>
+      <label><input type="checkbox" value="MATH"> Math</label><br>
+      <label><input type="checkbox" value="GENERAL SCIENCE"> General Science</label><br>
+      <label><input type="checkbox" value="ASTRONOMY"> Astronomy</label><br>
+      <label><input type="checkbox" value="COMPUTER SCIENCE"> Computer Science</label><br>
     </div>
     <div class="section-title">Difficulty</div>
     <div id="difficultyList">
-      <label><input type="checkbox" value="middle_school"> Middle School</label>
+      <label><input type="checkbox" value="middle_school"> Middle School</label><br>
       <label><input type="checkbox" value="high_school"> High School</label>
     </div>
     <div class="section-title">Reading Speed</div>
     <input type="range" id="speedSlider" min="1" max="10" value="7" />
     <span id="speedLabel">Speed: 7 (Recommended: 5–8)</span>
   </div>
-  <div class="main">
+
+  <div class="game-card">
+    <button id="filterToggle" onclick="toggleDrawer()">Filters</button>
+    <div id="buzzerTimer" class="timer hidden"></div>
     <h1>🔬 SciBowlReader</h1>
     <button onclick="loadQuestion()">Load Question</button>
     <button id="pauseBtn" onclick="togglePause()" class="hidden">Pause</button>
     <button id="buzzBtn" onclick="buzz()" class="hidden">Buzz!</button>
     <button id="showBonusBtn" onclick="startBonus()" class="hidden">Show Bonus</button>
-    <div id="questionType" style="margin-top:10px; font-weight:bold;"></div>
+    <div id="questionType"></div>
     <div id="loading" class="hidden">Loading question...</div>
     <div id="readerLine"></div>
-    <div id="buzzerTimer" class="hidden"></div>
     <div id="answer" class="hidden"></div>
     <div id="answerInputDiv" class="hidden">
       <input type="text" id="userAnswer" placeholder="Your answer..." />
@@ -113,7 +169,12 @@
       <button onclick="submitBonusAnswer()">Submit</button>
     </div>
   </div>
+
   <script>
+    function toggleDrawer() {
+      document.getElementById('filterDrawer').classList.toggle('open');
+    }
+
     let questionData = null;
     let wordIndex = 0;
     let interval = null;
@@ -228,7 +289,6 @@
             });
           }
 
-          // ✅ New logic: start bonus timer if reading ends and player didn’t buzz
           if (bonus && !bonusBuzzed) {
             startTimer(20, "Bonus Timer", () => {
               bonusTimerLocked = true;
