@@ -24,7 +24,6 @@
     .game-card {
       background: white;
       width: 1000px;
-      length: 1000px;
       padding: 40px;
       border-radius: 12px;
       box-shadow: 0 0 20px rgba(0,0,0,0.1);
@@ -76,17 +75,16 @@
     .hidden {
       display: none;
     }
-    
- #filterToggle {
-  position: absolute;
-  top: 15px;
-  right: 340px;  /* moved it left to be outside the drawer */
-  background: #888;
-  font-size: 13px;
-  padding: 6px 12px;
-  z-index: 1001; /* make sure it's above the drawer */
-}
 
+    #filterToggle {
+      position: absolute;
+      top: 15px;
+      right: 340px;
+      background: #888;
+      font-size: 13px;
+      padding: 6px 12px;
+      z-index: 1001;
+    }
 
     .filter-drawer {
       position: fixed;
@@ -120,23 +118,23 @@
       font-weight: bold;
       margin-top: 5px;
     }
+
     #categoryList label,
-#difficultyList label {
-  display: flex;
-  align-items: center;
-  margin-bottom: 8px;
-  font-size: 15px;
-  cursor: pointer;
-}
+    #difficultyList label {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 15px;
+      cursor: pointer;
+    }
 
-#categoryList input[type="checkbox"],
-#difficultyList input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
-  margin-right: 8px;
-  accent-color: #0074D9; /* Adds a modern blue highlight */
-}
-
+    #categoryList input[type="checkbox"],
+    #difficultyList input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      margin-right: 8px;
+      accent-color: #0074D9;
+    }
   </style>
 </head>
 <body>
@@ -146,19 +144,19 @@
     <div class="section-title">Categories</div>
     <label><input type="checkbox" id="selectAllCats"> Select All</label>
     <div id="categoryList">
-      <label><input type="checkbox" value="PHYSICS"> Physics</label><br>
-      <label><input type="checkbox" value="CHEMISTRY"> Chemistry</label><br>
-      <label><input type="checkbox" value="BIOLOGY"> Biology</label><br>
-      <label><input type="checkbox" value="EARTH AND SPACE"> Earth and Space</label><br>
-      <label><input type="checkbox" value="ENERGY"> Energy</label><br>
-      <label><input type="checkbox" value="MATH"> Math</label><br>
-      <label><input type="checkbox" value="GENERAL SCIENCE"> General Science</label><br>
-      <label><input type="checkbox" value="ASTRONOMY"> Astronomy</label><br>
-      <label><input type="checkbox" value="COMPUTER SCIENCE"> Computer Science</label><br>
+      <label><input type="checkbox" value="PHYSICS"> Physics</label>
+      <label><input type="checkbox" value="CHEMISTRY"> Chemistry</label>
+      <label><input type="checkbox" value="BIOLOGY"> Biology</label>
+      <label><input type="checkbox" value="EARTH AND SPACE"> Earth and Space</label>
+      <label><input type="checkbox" value="ENERGY"> Energy</label>
+      <label><input type="checkbox" value="MATH"> Math</label>
+      <label><input type="checkbox" value="GENERAL SCIENCE"> General Science</label>
+      <label><input type="checkbox" value="ASTRONOMY"> Astronomy</label>
+      <label><input type="checkbox" value="COMPUTER SCIENCE"> Computer Science</label>
     </div>
     <div class="section-title">Difficulty</div>
     <div id="difficultyList">
-      <label><input type="checkbox" value="middle_school"> Middle School</label><br>
+      <label><input type="checkbox" value="middle_school"> Middle School</label>
       <label><input type="checkbox" value="high_school"> High School</label>
     </div>
     <div class="section-title">Reading Speed</div>
@@ -214,9 +212,27 @@
     });
 
     document.addEventListener("keydown", e => {
+      const activeTag = document.activeElement.tagName;
+      const inInput = activeTag === "INPUT" || activeTag === "TEXTAREA";
+
       if (e.code === "Space") {
+        if (!inInput && questionLoaded) {
+          e.preventDefault();
+          buzz();
+        }
+      }
+
+      if (e.key.toLowerCase() === "l" && !inInput) {
         e.preventDefault();
-        buzz();
+        loadQuestion();
+      }
+
+      if (e.key === "Enter") {
+        if (document.getElementById("userAnswer") === document.activeElement) {
+          submitAnswer();
+        } else if (document.getElementById("userBonusAnswer") === document.activeElement) {
+          submitBonusAnswer();
+        }
       }
     });
 
@@ -253,7 +269,7 @@
       bonusTimerLocked = false;
       bonusShown = false;
       isBonus = false;
-      questionLoaded = true;
+      questionLoaded = false;
 
       const payload = {};
       const categories = getChecked("categoryList");
@@ -273,6 +289,7 @@
         questionData.bonus_type = questionData.bonus_format;
         document.getElementById("questionType").textContent = `Type: ${questionData.question_type} – ${questionData.category}`;
         document.getElementById("loading").classList.add("hidden");
+        questionLoaded = true;
         startReading(questionData.tossup_question, false);
       } catch (err) {
         document.getElementById("readerLine").innerHTML = `<p style="color:red;">⚠️ Failed to load question.</p>`;
@@ -338,6 +355,7 @@
       if (isBonus) {
         bonusBuzzed = true;
         document.getElementById("bonusInputDiv").classList.remove("hidden");
+        document.getElementById("userBonusAnswer").focus();
         startTimer(20, "Bonus Timer", () => {
           document.getElementById("bonusInputDiv").classList.add("hidden");
           showAnswer(true);
@@ -346,6 +364,7 @@
       } else {
         buzzed = true;
         document.getElementById("answerInputDiv").classList.remove("hidden");
+        document.getElementById("userAnswer").focus();
         startTimer(10, "Answer Timer", () => {
           document.getElementById("answerInputDiv").classList.add("hidden");
           showAnswer(false);
@@ -378,7 +397,7 @@
       const user = document.getElementById("userAnswer").value.trim();
       const correct = questionData.tossup_answer;
       const isMC = questionData.question_type === "Multiple Choice";
-      const result = await gradeAnswer(user, correct, isMC);
+      await gradeAnswer(user, correct, isMC);
 
       if (countdownId) clearInterval(countdownId);
       countdownId = null;
@@ -403,7 +422,7 @@
       const user = document.getElementById("userBonusAnswer").value.trim();
       const correct = questionData.bonus_answer;
       const isMC = questionData.bonus_type === "Multiple Choice";
-      const result = await gradeAnswer(user, correct, isMC);
+      await gradeAnswer(user, correct, isMC);
 
       if (countdownId) clearInterval(countdownId);
       countdownId = null;
@@ -465,39 +484,6 @@
       document.getElementById("questionType").textContent = `Type: ${questionData.bonus_type} – ${questionData.category}`;
       startReading(questionData.bonus_question, true);
     }
-    document.getElementById("userAnswer").addEventListener("keydown", function (e) {
-  if (e.key === "Enter") {
-    e.preventDefault();
-    submitAnswer();
-  }
-});
-
-document.getElementById("userBonusAnswer").addEventListener("keydown", function (e) {
-  if (e.key === "Enter") {
-    e.preventDefault();
-    submitBonusAnswer();
-  }
-});
-   document.addEventListener("keydown", function (e) {
-  const active = document.activeElement;
-  const isTyping = active.tagName === "INPUT" && active.type === "text";
-
-  if (!isTyping && questionLoaded) {
-    if (e.code === "Space") {
-      e.preventDefault();
-      buzz();
-    } else if (e.key.toLowerCase() === "l") {
-      e.preventDefault();
-      loadQuestion();
-    }
-  }
-});
-
-
-
-
   </script>
 </body>
 </html>
-
-
