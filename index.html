@@ -301,6 +301,7 @@
         body: Object.keys(payload).length ? JSON.stringify(payload) : null
       });
       const data = await res.json();
+      if (!data || !data.questions || !data.questions.length) throw new Error("No questions returned");
       questionData = data.questions[0];
       questionData.question_type = questionData.tossup_format;
       questionData.bonus_type = questionData.bonus_format;
@@ -312,12 +313,14 @@
       loadingInProgress = false;
       startReading(questionData.tossup_question, false);
     } catch (err) {
-      document.getElementById("readerLine").innerHTML = `<p style="color:red;">⚠️ Failed to load question.</p>`;
+      document.getElementById("readerLine").innerHTML = `<p style="color:red;">⚠️ Failed to load question: ${err.message}</p>`;
       loadBtn.disabled = false;
       loadBtn.textContent = "Load Question (L)";
       loadingInProgress = false;
     }
   }
+</script>
+
 
 
 
