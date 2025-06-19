@@ -192,133 +192,132 @@
     </div>
   </div>
 
-  <script>
-    function toggleDrawer() {
-      document.getElementById('filterDrawer').classList.toggle('open');
-    }
-
-    let questionData = null;
-    let wordIndex = 0;
-    let interval = null;
-    let countdownId = null;
-    let paused = false;
-    let buzzed = false;
-    let bonusBuzzed = false;
-    let readingDone = false;
-    let timerLocked = false;
-    let bonusTimerLocked = false;
-    let bonusShown = false;
-    let isBonus = false;
-    let questionLoaded = false;
-    let loadingInProgress = false;
-
-    const speedSlider = document.getElementById("speedSlider");
-    speedSlider.addEventListener("input", () => {
-      document.getElementById("speedLabel").textContent = Speed: ${speedSlider.value} (Recommended: 5–8);
-    });
-
-    document.addEventListener("keydown", e => {
-      const activeTag = document.activeElement.tagName;
-      const inInput = activeTag === "INPUT" || activeTag === "TEXTAREA";
-
-      if (e.code === "Space") {
-        if (!inInput && questionLoaded) {
-          e.preventDefault();
-          buzz();
-        }
-      }
-
-      if (e.key.toLowerCase() === "l" && !inInput) {
-        e.preventDefault();
-        loadQuestion();
-      }
-
-      if (e.key === "Enter") {
-        if (document.getElementById("userAnswer") === document.activeElement) {
-          submitAnswer();
-        } else if (document.getElementById("userBonusAnswer") === document.activeElement) {
-          submitBonusAnswer();
-        }
-      }
-    });
-
-    document.getElementById("selectAllCats").addEventListener("change", function () {
-      document.querySelectorAll("#categoryList input[type='checkbox']").forEach(cb => cb.checked = this.checked);
-    });
-
-    function getChecked(id) {
-      return [...document.querySelectorAll(#${id} input:checked)].map(el => el.value);
-    }
-
-async function loadQuestion() {
-  if (loadingInProgress) return; // 🔒 prevent spamming
-  loadingInProgress = true;
-
-  const loadBtn = document.getElementById("loadBtn");
-  loadBtn.disabled = true;
-  loadBtn.textContent = "Loading...";
-
-  // FULL RESET
-  if (countdownId) clearInterval(countdownId);
-  countdownId = null;
-  if (interval) clearInterval(interval);
-  interval = null;
-
-  wordIndex = 0;
-  document.getElementById("readerLine").innerHTML = "";
-
-  document.getElementById("buzzBtn").classList.add("hidden");
-  document.getElementById("loading").classList.remove("hidden");
-  document.getElementById("answer").classList.add("hidden");
-  document.getElementById("bonusAnswer").classList.add("hidden");
-  document.getElementById("bonusInputDiv").classList.add("hidden");
-  document.getElementById("answerInputDiv").classList.add("hidden");
-  document.getElementById("buzzerTimer").textContent = "";
-  document.getElementById("buzzerTimer").classList.add("hidden");
-  document.getElementById("showBonusBtn").classList.add("hidden");
-  document.getElementById("questionType").textContent = "";
-  document.getElementById("userAnswer").value = "";
-  document.getElementById("userBonusAnswer").value = "";
-
-  buzzed = false;
-  bonusBuzzed = false;
-  readingDone = false;
-  timerLocked = false;
-  bonusTimerLocked = false;
-  bonusShown = false;
-  isBonus = false;
-  questionLoaded = false;
-
-  const payload = {};
-  const categories = getChecked("categoryList");
-  const difficulties = getChecked("difficultyList");
-  if (categories.length) payload.categories = categories;
-  if (difficulties.length) payload.difficulties = difficulties;
-
-  try {
-    const res = await fetch("https://sci-bowl-proxy.onrender.com/api/random", {
-      method: Object.keys(payload).length ? "POST" : "GET",
-      headers: { "Content-Type": "application/json" },
-      body: Object.keys(payload).length ? JSON.stringify(payload) : null
-    });
-    const data = await res.json();
-    questionData = data.questions[0];
-    questionData.question_type = questionData.tossup_format;
-    questionData.bonus_type = questionData.bonus_format;
-    document.getElementById("questionType").textContent = Type: ${questionData.question_type} – ${questionData.category};
-    document.getElementById("loading").classList.add("hidden");
-    questionLoaded = true;
-    loadBtn.disabled = false;
-    loadBtn.textContent = "Load Question (L)";
-    loadingInProgress = false;
-    startReading(questionData.tossup_question, false);
-  } catch (err) {
-    document.getElementById("readerLine").innerHTML = <p style="color:red;">⚠️ Failed to load question.</p>;
-    loadBtn.disabled = false;
-    loadBtn.textContent = "Load Question (L)";
-    loadingInProgress = false;
+<script>
+  function toggleDrawer() {
+    document.getElementById('filterDrawer').classList.toggle('open');
   }
-}
+
+  let questionData = null;
+  let wordIndex = 0;
+  let interval = null;
+  let countdownId = null;
+  let paused = false;
+  let buzzed = false;
+  let bonusBuzzed = false;
+  let readingDone = false;
+  let timerLocked = false;
+  let bonusTimerLocked = false;
+  let bonusShown = false;
+  let isBonus = false;
+  let questionLoaded = false;
+  let loadingInProgress = false;
+
+  const speedSlider = document.getElementById("speedSlider");
+  speedSlider.addEventListener("input", () => {
+    document.getElementById("speedLabel").textContent = `Speed: ${speedSlider.value} (Recommended: 5–8)`;
+  });
+
+  document.addEventListener("keydown", e => {
+    const activeTag = document.activeElement.tagName;
+    const inInput = activeTag === "INPUT" || activeTag === "TEXTAREA";
+
+    if (e.code === "Space") {
+      if (!inInput && questionLoaded) {
+        e.preventDefault();
+        buzz();
+      }
+    }
+
+    if (e.key.toLowerCase() === "l" && !inInput) {
+      e.preventDefault();
+      loadQuestion();
+    }
+
+    if (e.key === "Enter") {
+      if (document.getElementById("userAnswer") === document.activeElement) {
+        submitAnswer();
+      } else if (document.getElementById("userBonusAnswer") === document.activeElement) {
+        submitBonusAnswer();
+      }
+    }
+  });
+
+  document.getElementById("selectAllCats").addEventListener("change", function () {
+    document.querySelectorAll("#categoryList input[type='checkbox']").forEach(cb => cb.checked = this.checked);
+  });
+
+  function getChecked(id) {
+    return [...document.querySelectorAll(`#${id} input:checked`)].map(el => el.value);
+  }
+
+  async function loadQuestion() {
+    if (loadingInProgress) return;
+    loadingInProgress = true;
+
+    const loadBtn = document.getElementById("loadBtn");
+    loadBtn.disabled = true;
+    loadBtn.textContent = "Loading...";
+
+    if (countdownId) clearInterval(countdownId);
+    countdownId = null;
+    if (interval) clearInterval(interval);
+    interval = null;
+
+    wordIndex = 0;
+    document.getElementById("readerLine").innerHTML = "";
+
+    document.getElementById("buzzBtn").classList.add("hidden");
+    document.getElementById("loading").classList.remove("hidden");
+    document.getElementById("answer").classList.add("hidden");
+    document.getElementById("bonusAnswer").classList.add("hidden");
+    document.getElementById("bonusInputDiv").classList.add("hidden");
+    document.getElementById("answerInputDiv").classList.add("hidden");
+    document.getElementById("buzzerTimer").textContent = "";
+    document.getElementById("buzzerTimer").classList.add("hidden");
+    document.getElementById("showBonusBtn").classList.add("hidden");
+    document.getElementById("questionType").textContent = "";
+    document.getElementById("userAnswer").value = "";
+    document.getElementById("userBonusAnswer").value = "";
+
+    buzzed = false;
+    bonusBuzzed = false;
+    readingDone = false;
+    timerLocked = false;
+    bonusTimerLocked = false;
+    bonusShown = false;
+    isBonus = false;
+    questionLoaded = false;
+
+    const payload = {};
+    const categories = getChecked("categoryList");
+    const difficulties = getChecked("difficultyList");
+    if (categories.length) payload.categories = categories;
+    if (difficulties.length) payload.difficulties = difficulties;
+
+    try {
+      const res = await fetch("https://sci-bowl-proxy.onrender.com/api/random", {
+        method: Object.keys(payload).length ? "POST" : "GET",
+        headers: { "Content-Type": "application/json" },
+        body: Object.keys(payload).length ? JSON.stringify(payload) : null
+      });
+      const data = await res.json();
+      questionData = data.questions[0];
+      questionData.question_type = questionData.tossup_format;
+      questionData.bonus_type = questionData.bonus_format;
+      document.getElementById("questionType").textContent = `Type: ${questionData.question_type} – ${questionData.category}`;
+      document.getElementById("loading").classList.add("hidden");
+      questionLoaded = true;
+      loadBtn.disabled = false;
+      loadBtn.textContent = "Load Question (L)";
+      loadingInProgress = false;
+      startReading(questionData.tossup_question, false);
+    } catch (err) {
+      document.getElementById("readerLine").innerHTML = `<p style="color:red;">⚠️ Failed to load question.</p>`;
+      loadBtn.disabled = false;
+      loadBtn.textContent = "Load Question (L)";
+      loadingInProgress = false;
+    }
+  }
 
 
 
