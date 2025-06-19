@@ -142,36 +142,6 @@
     <b>SciBowlReader V1</b><br>
     Contains over 7000 High-School and Middle-School Science Bowl Tossups and Bonuses
   </div>
-<!-- Register Modal -->
-<div id="registerModal" class="hidden" style="position: fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.6); display:flex; justify-content:center; align-items:center; z-index:3000;">
-  <div style="background:white; padding:30px; border-radius:10px; width:300px;">
-    <h2>Sign Up</h2>
-    <input id="regEmail" type="email" placeholder="Email" style="width:100%; margin-bottom:10px; padding:8px;" />
-    <input id="regUsername" type="text" placeholder="Username" style="width:100%; margin-bottom:10px; padding:8px;" />
-    <input id="regPassword" type="password" placeholder="Password" style="width:100%; margin-bottom:10px; padding:8px;" />
-    <button onclick="registerUser()">Register</button>
-    <button onclick="closeRegister()" style="background:gray; margin-top:10px;">Cancel</button>
-    <div id="registerMsg" style="margin-top:10px; color:red;"></div>
-  </div>
-</div>
-
-<!-- Login Modal -->
-<div id="loginModal" class="hidden" style="position: fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.6); display:flex; justify-content:center; align-items:center; z-index:3000;">
-  <div style="background:white; padding:30px; border-radius:10px; width:300px;">
-    <h2>Login</h2>
-    <input id="logEmail" type="email" placeholder="Email" style="width:100%; margin-bottom:10px; padding:8px;" />
-    <input id="logPassword" type="password" placeholder="Password" style="width:100%; margin-bottom:10px; padding:8px;" />
-    <button onclick="loginUser()">Login</button>
-    <button onclick="closeLogin()" style="background:gray; margin-top:10px;">Cancel</button>
-    <div id="loginMsg" style="margin-top:10px; color:red;"></div>
-  </div>
-</div>
-
-<!-- Top-right buttons -->
-<div style="position:absolute; top:10px; right:10px; z-index:1000;">
-  <button onclick="openLogin()">Login</button>
-  <button onclick="openRegister()">Sign Up</button>
-</div>
 
     
   <div id="filterDrawer" class="filter-drawer">
@@ -279,8 +249,6 @@
     function getChecked(id) {
       return [...document.querySelectorAll(#${id} input:checked)].map(el => el.value);
     }
-
-
 
 async function loadQuestion() {
   if (loadingInProgress) return; // 🔒 prevent spamming
@@ -543,63 +511,6 @@ async function loadQuestion() {
       document.getElementById("questionType").textContent = Type: ${questionData.bonus_type} – ${questionData.category};
       startReading(questionData.bonus_question, true);
     }
-    <script type="module">
-  import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
-
-  const supabase = createClient(
-    "https://iqvfbdacpgozrpvkcrao.supabase.co",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-  );
-
-  window.supabase = supabase;
-
-  window.openRegister = () => document.getElementById("registerModal").classList.remove("hidden");
-  window.closeRegister = () => document.getElementById("registerModal").classList.add("hidden");
-  window.openLogin = () => document.getElementById("loginModal").classList.remove("hidden");
-  window.closeLogin = () => document.getElementById("loginModal").classList.add("hidden");
-
-  window.registerUser = async () => {
-    const email = document.getElementById("regEmail").value.trim();
-    const password = document.getElementById("regPassword").value.trim();
-    const username = document.getElementById("regUsername").value.trim();
-
-    if (!email || !password || !username) {
-      document.getElementById("registerMsg").textContent = "All fields required.";
-      return;
-    }
-
-    const { data, error } = await supabase.auth.signUp({ email, password });
-
-    if (error) {
-      document.getElementById("registerMsg").textContent = error.message;
-      return;
-    }
-
-    const user = data.user;
-    if (user) {
-      const { error: insertError } = await supabase.from("profiles").insert([{ id: user.id, username }]);
-      if (insertError) {
-        document.getElementById("registerMsg").textContent = "Account created, but profile failed.";
-      } else {
-        document.getElementById("registerMsg").textContent = "✅ Check your email to confirm.";
-      }
-    }
-  };
-
-  window.loginUser = async () => {
-    const email = document.getElementById("logEmail").value.trim();
-    const password = document.getElementById("logPassword").value.trim();
-
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-
-    if (error) {
-      document.getElementById("loginMsg").textContent = error.message;
-    } else {
-      document.getElementById("loginMsg").textContent = "✅ Login successful!";
-      closeLogin();
-    }
-  };
-
   </script>
 </body>
 </html>
